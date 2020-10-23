@@ -416,14 +416,15 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
     // context
     struct CurlContext curlContext;
     curlContext.body = body;
-    //todo: body传入冗余，依赖于回调取数据
-    curlContext.totalBytesExpectedToSend = curlUtilGetRequestContentLength(&curlContext, body, header);;
     curlContext.url = url;
     curlContext.env = env;
     curlContext.curlObj = curlObj;
     curlContext.curlHandler = curlHandler;
     curlContext.responseHeaderFields = NULL;
     curlContext.metrics = createJavaMetrics(&curlContext);
+    //todo: body传入冗余，依赖于回调取数据
+    curlContext.totalBytesExpectedToSend = curlUtilGetRequestContentLength(&curlContext, body, header);
+
     struct timeval tp;
     gettimeofday(&tp, NULL);
     long int timestamp = tp.tv_sec * 1000 + tp.tv_usec / 1000;
@@ -441,12 +442,9 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
     for (int i = 0; i < headSize; ++i) {
         jstring headerField = (jstring)env->GetObjectArrayElement(header, i);
         const char *headerField_char = env->GetStringUTFChars(headerField, NULL);
-        if (headerField_char == NULL) {
-            kCurlLogD("header is NULL");
-        } else {
-            kCurlLogD("===== header: %s", headerField_char);
+        if (headerField_char != NULL) {
             headerList = curl_slist_append(headerList, headerField_char);
-        }                              
+        }
     }
     curlContext.requestHeaderFields = headerList;
 
@@ -493,6 +491,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
         goto curl_perform_complete;
     }
     kCurlLogD("== Curl Debug: 6");
+    
     performRequest(curl, &errorCode, reinterpret_cast<const char **>(&errorInfo));
     if (errorInfo != NULL){
         goto curl_perform_complete;
@@ -505,6 +504,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
 
     completeWithError(&curlContext, errorCode, reinterpret_cast<const char *>(&errorInfo));
 
+    env->ReleaseStringUTFChars(url, url_char);
     if (dnsResolver != NULL) {
         curl_slist_free_all(dnsResolver);
     }

@@ -8,24 +8,24 @@
 #include <ctype.h>
 #include <string.h>
 
-char * curlUtilStrToLower(char *str){
-    if (str == NULL){
+char *curlUtilStrToLower(char *str) {
+    if (str == NULL) {
         return str;
     }
     int i = 0;
-    while (i < strlen(str)){
+    while (i < strlen(str)) {
         str[i] = static_cast<char>(tolower(str[i]));
         i++;
     }
     return str;
 }
 
-char * curlUtilStrStr(char * ps,char *pd){
+char *curlUtilStrStr(char *ps, char *pd) {
     char *pt = pd;
     int c = 0;
-    while(*ps != '\0') {
-        if(*ps == *pd) {
-            while(*ps == *pd && *pd!='\0') {
+    while (*ps != '\0') {
+        if (*ps == *pd) {
+            while (*ps == *pd && *pd != '\0') {
                 ps++;
                 pd++;
                 c++;
@@ -33,7 +33,7 @@ char * curlUtilStrStr(char * ps,char *pd){
         } else {
             ps++;
         }
-        if(*pd == '\0') {
+        if (*pd == '\0') {
             return (ps - c);
         }
         c = 0;
@@ -42,7 +42,7 @@ char * curlUtilStrStr(char * ps,char *pd){
     return 0;
 }
 
-void * curlUtilMemcpy(void * dest,const void *src,size_t count){
+void *curlUtilMemcpy(void *dest, const void *src, size_t count) {
     char *tmp = (char *) dest, *s = (char *) src;
     while (count--) {
         *tmp++ = *s++;
@@ -50,7 +50,7 @@ void * curlUtilMemcpy(void * dest,const void *src,size_t count){
     return dest;
 }
 
-int curlUtilStrReplace(char *p_result, char* p_source, char* p_seach, char *p_repstr){
+int curlUtilStrReplace(char *p_result, char *p_source, char *p_seach, char *p_repstr) {
     int c = 0;
     int repstr_leng = 0;
     int searchstr_leng = 0;
@@ -65,38 +65,38 @@ int curlUtilStrReplace(char *p_result, char* p_source, char* p_seach, char *p_re
     repstr_leng = strlen(prep);
     searchstr_leng = strlen(pseach);
 
-    do{
-        p1 = curlUtilStrStr(psource,p_seach);
+    do {
+        p1 = curlUtilStrStr(psource, p_seach);
 
-        if (p1 == 0)
-        {
-            strcpy(presult,psource);
+        if (p1 == 0) {
+            strcpy(presult, psource);
             return c;
         }
         c++;
 
         nLen = p1 - psource;
         memcpy(presult, psource, nLen);
-        memcpy(presult + nLen,p_repstr,repstr_leng);
+        memcpy(presult + nLen, p_repstr, repstr_leng);
 
         psource = p1 + searchstr_leng;
         presult = presult + nLen + repstr_leng;
-    } while(p1);
+    } while (p1);
 
     return c;
 }
 
-long curlUtilGetRequestContentLength(CurlContext *curlContext, jbyteArray body, jobjectArray header){
-    if (curlContext == NULL || curlContext->env == NULL){
+long
+curlUtilGetRequestContentLength(CurlContext *curlContext, jbyteArray body, jobjectArray header) {
+    if (curlContext == NULL || curlContext->env == NULL) {
         return 0;
     }
 
     JNIEnv *env = curlContext->env;
-//    if (body != NULL){
-//        return env->Getby GetArrayLength(body);
-//    }
+    if (body != NULL) {
+        return env->GetArrayLength(body);
+    }
 
-    if (header == NULL){
+    if (header == NULL) {
         return 0;
     }
 
@@ -104,16 +104,17 @@ long curlUtilGetRequestContentLength(CurlContext *curlContext, jbyteArray body, 
     char headerSegmentation[] = ":";
     long contentLength = 0;
     for (int i = 0; i < env->GetArrayLength(header); ++i) {
-        jstring headerField = (jstring)env->GetObjectArrayElement(header, i);
-        jboolean isCopy;
-        const char *headerFieldChar = env->GetStringUTFChars(headerField, &isCopy);
-        if (strlen(headerFieldChar) < 30){
+        jstring headerField = (jstring) env->GetObjectArrayElement(header, i);
+        jboolean isHeaderFieldCopy;
+        const char *headerFieldChar = env->GetStringUTFChars(headerField, &isHeaderFieldCopy);
+        if (strlen(headerFieldChar) < 30) {
             headerFieldChar = curlUtilStrToLower(const_cast<char *>(headerFieldChar));
         } else {
             continue;
         }
 
-        if (strstr(headerFieldChar, contentTypeKey) != NULL && strstr(headerFieldChar, headerSegmentation) != NULL){
+        if (strstr(headerFieldChar, contentTypeKey) != NULL &&
+            strstr(headerFieldChar, headerSegmentation) != NULL) {
 
             char spaceChar[] = " ";
             char emptyChar[] = "";
@@ -128,10 +129,13 @@ long curlUtilGetRequestContentLength(CurlContext *curlContext, jbyteArray body, 
 
             contentLengthSource = contentLengthChar1;
             char contentLengthChar2[30] = {0};
-            curlUtilStrReplace(contentLengthChar2, contentLengthSource, headerSegmentation, emptyChar);
+            curlUtilStrReplace(contentLengthChar2, contentLengthSource, headerSegmentation,
+                               emptyChar);
 
             contentLength = atol(contentLengthChar2);
         }
+
+        env->ReleaseStringUTFChars(headerField, headerFieldChar);
     }
     return contentLength;
 }

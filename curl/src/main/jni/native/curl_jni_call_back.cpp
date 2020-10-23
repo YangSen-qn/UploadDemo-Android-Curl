@@ -65,6 +65,10 @@ void receiveResponse(CurlContext *curlContext, jstring url, int statusCode, char
 
     env->DeleteLocalRef(handler_class);
     env->DeleteLocalRef(httPVersion_string);
+    for (int i = 0; i < env->GetArrayLength(headerFieldArray); ++i) {
+        jobject e = env->GetObjectArrayElement(headerFieldArray, i);
+        env->DeleteLocalRef(e);
+    }
     env->DeleteLocalRef(headerFieldArray);
 }
 
@@ -97,9 +101,12 @@ size_t sendData(struct CurlContext *curlContext, char *buffer, long long dataLen
                                                                     dataLength));
     if (data != NULL) {
         readLength = static_cast<size_t>(env->GetArrayLength(data));
-        jbyte *bytes = env->GetByteArrayElements(data, 0);
+
+        jboolean isCopy;
+        jbyte *bytes = env->GetByteArrayElements(data, &isCopy);
         memcpy(buffer, bytes, static_cast<size_t>(readLength));
-        env->ReleaseByteArrayElements(data, bytes, 0);
+
+        env->ReleaseByteArrayElements(data, bytes, isCopy);
     }
 
     env->DeleteLocalRef(handler_class);
