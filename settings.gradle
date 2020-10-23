@@ -1,0 +1,2 @@
+include ':app', ':library', ':curl'
+rootProject.name='UploadDemo_Android'
