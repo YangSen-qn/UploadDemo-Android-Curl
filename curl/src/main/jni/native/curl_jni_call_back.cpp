@@ -65,9 +65,11 @@ void receiveResponse(CurlContext *curlContext, jstring url, int statusCode, char
 
     env->DeleteLocalRef(handler_class);
     env->DeleteLocalRef(httPVersion_string);
-    for (int i = 0; i < env->GetArrayLength(headerFieldArray); ++i) {
-        jobject e = env->GetObjectArrayElement(headerFieldArray, i);
-        env->DeleteLocalRef(e);
+    if (headerFieldArray != NULL) {
+        for (int i = 0; i < env->GetArrayLength(headerFieldArray); ++i) {
+            jobject e = env->GetObjectArrayElement(headerFieldArray, i);
+            env->DeleteLocalRef(e);
+        }
     }
     env->DeleteLocalRef(headerFieldArray);
 }

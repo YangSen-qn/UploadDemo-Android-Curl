@@ -186,17 +186,17 @@ void initCurlRequestDefaultOptions(CURL *curl, struct CurlContext *curlContext, 
     curl_easy_setopt(curl, CURLOPT_MAXCONNECTS, 0L);
     curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1L);
     curl_easy_setopt(curl, CURLOPT_DNS_CACHE_TIMEOUT, 10L);
-    curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
+    curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
     //todo: CA证书配置
 //  curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_DEFAULT);
 //  curl_easy_setopt(curl, CURLOPT_SSL_CIPHER_LIST, "ALL");
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, NULL);
+//    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, NULL);
 
-//    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-//    curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, CurlDebugCallback);
-//    curl_easy_setopt(curl, CURLOPT_DEBUGDATA, curlContext);
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+    curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, CurlDebugCallback);
+    curl_easy_setopt(curl, CURLOPT_DEBUGDATA, curlContext);
 
     qn_curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, CurlReceiveHeaderCallback, errorCode,
                         errorInfo, "header function set 0 error");
@@ -444,6 +444,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
         const char *headerField_char = env->GetStringUTFChars(headerField, NULL);
         if (headerField_char != NULL) {
             headerList = curl_slist_append(headerList, headerField_char);
+            env->ReleaseStringUTFChars(headerField, headerField_char);
         }
     }
     curlContext.requestHeaderFields = headerList;
