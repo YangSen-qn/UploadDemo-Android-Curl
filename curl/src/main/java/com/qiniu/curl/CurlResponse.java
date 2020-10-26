@@ -9,12 +9,19 @@ public class CurlResponse {
     public final Map<String, String> allHeaderFields;
     public final String mimeType;
     public final long expectedContentLength;
+    public final String httpVersion;
 
-    public CurlResponse(String url, int statusCode, Map<String, String> allHeaderFields, String mimeType, long expectedContentLength) {
+    public CurlResponse(String url,
+                        int statusCode,
+                        Map<String, String> allHeaderFields,
+                        String mimeType,
+                        long expectedContentLength,
+                        String httpVersion) {
         this.url = url;
         this.statusCode = statusCode;
         this.allHeaderFields = allHeaderFields;
         this.mimeType = mimeType;
         this.expectedContentLength = expectedContentLength;
+        this.httpVersion = httpVersion;
     }
 }

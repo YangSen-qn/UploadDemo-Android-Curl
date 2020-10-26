@@ -42,14 +42,6 @@ char *curlUtilStrStr(char *ps, char *pd) {
     return 0;
 }
 
-void *curlUtilMemcpy(void *dest, const void *src, size_t count) {
-    char *tmp = (char *) dest, *s = (char *) src;
-    while (count--) {
-        *tmp++ = *s++;
-    }
-    return dest;
-}
-
 int curlUtilStrReplace(char *p_result, char *p_source, char *p_seach, char *p_repstr) {
     int c = 0;
     int repstr_leng = 0;

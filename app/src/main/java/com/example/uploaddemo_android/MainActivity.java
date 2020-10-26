@@ -101,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         String token = "your token";
-        token = "dxVQk8gyk3WswArbNhdKIwmwibJ9nFsQhMNUmtIM:1cegvyd62qvnfnvnNQCh1XpYS0I=:eyJzY29wZSI6ImtvZG8tcGhvbmUtem9uZTAtc3BhY2UiLCJkZWFkbGluZSI6MTYwNzkxNDgyMiwgInJldHVybkJvZHkiOiJ7XCJmb29cIjokKHg6Zm9vKSwgXCJiYXJcIjokKHg6YmFyKSwgXCJtaW1lVHlwZVwiOiQobWltZVR5cGUpLCBcImhhc2hcIjokKGV0YWcpLCBcImtleVwiOiQoa2V5KSwgXCJmbmFtZVwiOiQoZm5hbWUpfSJ9";
+        token = "dxVQk8gyk3WswArbNhdKIwmwibJ9nFsQhMNUmtIM:j6i3LDn2N1GlQCKYR9eRjBYgytk=:eyJzY29wZSI6ImtvZG8tcGhvbmUtem9uZTAtc3BhY2UiLCJkZWFkbGluZSI6MTYwODg3OTI0MiwgInJldHVybkJvZHkiOiJ7XCJmb29cIjokKHg6Zm9vKSwgXCJiYXJcIjokKHg6YmFyKSwgXCJtaW1lVHlwZVwiOiQobWltZVR5cGUpLCBcImhhc2hcIjokKGV0YWcpLCBcImtleVwiOiQoa2V5KSwgXCJmbmFtZVwiOiQoZm5hbWUpfSJ9";
         Map<String, String> params = new HashMap<String, String>();
         params.put("x:foo", "foo");
         params.put("x:bar", "bar");

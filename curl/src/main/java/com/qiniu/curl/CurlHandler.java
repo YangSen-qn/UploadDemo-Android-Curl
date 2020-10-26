@@ -37,7 +37,7 @@ public class CurlHandler {
             if (responseHeader.get("content-length") != null){
                 contentLength = Long.parseLong(responseHeader.get("content-length"));
             }
-            CurlResponse response = new CurlResponse(url, statusCode, responseHeader, mineType, contentLength);
+            CurlResponse response = new CurlResponse(url, statusCode, responseHeader, mineType, contentLength, httpVersion);
             curlHandler.receiveResponse(response);
         }
     }

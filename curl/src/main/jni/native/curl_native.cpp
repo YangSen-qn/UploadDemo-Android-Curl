@@ -5,6 +5,7 @@
 #include "curl_context.h"
 #include "curl_transaction_metrics.h"
 #include "curl_configuration.h"
+#include "curl_request.h"
 #include "curl_jni_call_back.h"
 #include "curl_utils.h"
 
@@ -41,7 +42,7 @@
 }
 
 //-------------------------------------------- Curl filed ------------------------------------------
-bool curlJavaIsCancel(struct CurlContext *curlContext){
+bool curlJavaIsCancel(struct CurlContext *curlContext) {
     if (curlContext == NULL) {
         return false;
     }
@@ -64,43 +65,39 @@ bool curlJavaIsCancel(struct CurlContext *curlContext){
 
     return isCancel;
 }
+
 //--------------------------------------------- CallBack -------------------------------------------
 int CurlDebugCallback(CURL *curl, curl_infotype infoType, char *info, size_t infoLen,
                       void *contextInfo) {
 
-    const char *text;
     (void) curl; /* prevent compiler warning */
     (void) contextInfo;
 
     switch (infoType) {
         case CURLINFO_TEXT:
-            text = "=> Text";
-            fprintf(stderr, "== Info: %s", info);
-            break;
-        case CURLINFO_HEADER_OUT:
-            text = "=> Send header";
-            break;
-        case CURLINFO_DATA_OUT:
-            text = "=> Send data";
-            break;
-        case CURLINFO_SSL_DATA_OUT:
-            text = "=> Send SSL data";
+            fprintf(stderr, "=> Text: %s", info);
             break;
         case CURLINFO_HEADER_IN:
-            text = "<= Recv header";
+            kCurlLogD("<= Recv header: %s", info);
+            break;
+        case CURLINFO_HEADER_OUT:
+            kCurlLogD("==> Send header: %s", info);
             break;
         case CURLINFO_DATA_IN:
-            text = "<= Recv data";
+            kCurlLogD("=> Recv data");
+            break;
+        case CURLINFO_DATA_OUT:
+            kCurlLogD("=> Send data");
             break;
         case CURLINFO_SSL_DATA_IN:
-            text = "<= Recv SSL data";
+            kCurlLogD("<= Recv SSL data: %s", info);
+            break;
+        case CURLINFO_SSL_DATA_OUT:
+            kCurlLogD("=> Send SSL data: %s", info);
             break;
         default: /* in case a new one is introduced to shock us */
             return 0;
     }
-
-    kCurlLogD("%s", text);
-    kCurlLogD("     %s", info);
 
     return 0;
 }
@@ -108,7 +105,8 @@ int CurlDebugCallback(CURL *curl, curl_infotype infoType, char *info, size_t inf
 size_t CurlReceiveHeaderCallback(char *buffer, size_t size, size_t nitems, void *userData) {
     const size_t sizeInBytes = size * nitems;
     struct CurlContext *curlContext = (struct CurlContext *) userData;
-    curlContext->responseHeaderFields = curl_slist_append(curlContext->responseHeaderFields, buffer);
+    curlContext->responseHeaderFields = curl_slist_append(curlContext->responseHeaderFields,
+                                                          buffer);
     kCurlLogD("====== response header:%s", buffer);
     return sizeInBytes;
 }
@@ -116,7 +114,7 @@ size_t CurlReceiveHeaderCallback(char *buffer, size_t size, size_t nitems, void 
 size_t CurlReadCallback(void *ptr, size_t size, size_t nmemb, void *userData) {
     size_t sizeInBytes = size * nmemb;
     struct CurlContext *curlContext = (struct CurlContext *) userData;
-    sizeInBytes = sendData(curlContext, (char *)ptr, sizeInBytes);
+    sizeInBytes = sendData(curlContext, (char *) ptr, sizeInBytes);
     return sizeInBytes;
 }
 
@@ -126,24 +124,26 @@ size_t CurlWriteCallback(char *ptr, size_t size, size_t nmemb, void *userData) {
     return receiveData(curlContext, ptr, sizeInBytes);
 }
 
-int CurlProgressCallback(void *client, double downloadTotal, double downloadNow, double uploadTotal, double uploadNow) {
+int CurlProgressCallback(void *client, double downloadTotal, double downloadNow, double uploadTotal,
+                         double uploadNow) {
     struct CurlContext *curlContext = (struct CurlContext *) client;
 
     curlContext->totalBytesExpectedToSend = uploadTotal;
-    long long sendBodyLength = (long long)(uploadNow - curlContext->totalBytesSent);
-    if (sendBodyLength > 0 ){
+    long long sendBodyLength = (long long) (uploadNow - curlContext->totalBytesSent);
+    if (sendBodyLength > 0) {
         curlContext->totalBytesSent = uploadNow;
-        sendProgress(curlContext, sendBodyLength, (long long)uploadNow, (long long)uploadTotal);
+        sendProgress(curlContext, sendBodyLength, (long long) uploadNow, (long long) uploadTotal);
     }
 
     curlContext->totalBytesExpectedToReceive = downloadTotal;
-    long long receiveBodyLength = (long long)(downloadNow - curlContext->totalBytesReceive);
-    if (receiveBodyLength > 0 ){
+    long long receiveBodyLength = (long long) (downloadNow - curlContext->totalBytesReceive);
+    if (receiveBodyLength > 0) {
         curlContext->totalBytesReceive = downloadNow;
-        receiveProgress(curlContext, receiveBodyLength, (long long)downloadNow, (long long)downloadTotal);
+        receiveProgress(curlContext, receiveBodyLength, (long long) downloadNow,
+                        (long long) downloadTotal);
     }
 
-    if (curlJavaIsCancel(curlContext)){
+    if (curlJavaIsCancel(curlContext)) {
         return -999;
     } else {
         return 0;
@@ -169,6 +169,7 @@ void initCurlRequestDefaultOptions(CURL *curl, struct CurlContext *curlContext, 
 
     curl_easy_setopt(curl, CURLOPT_MAXCONNECTS, 0L);
     curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1L);
+//    curl_easy_setopt(curl, CURLOPT_PIPEWAIT, 1);
     curl_easy_setopt(curl, CURLOPT_DNS_CACHE_TIMEOUT, 10L);
     curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
     //todo: CA证书配置
@@ -200,7 +201,9 @@ void initCurlRequestUploadData(CURL *curl, struct CurlContext *curlContext, CURL
     if (curlContext == NULL) {
         return;
     }
-    qn_curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (curl_off_t)(curlContext->totalBytesExpectedToSend), errorCode, errorInfo, "body set error");
+    qn_curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE,
+                        (curl_off_t) (curlContext->totalBytesExpectedToSend), errorCode, errorInfo,
+                        "body set error");
     qn_curl_easy_setopt(curl, CURLOPT_READFUNCTION, CurlReadCallback, errorCode, errorInfo,
                         "read function set 1 error");
     qn_curl_easy_setopt(curl, CURLOPT_READDATA, curlContext, errorCode, errorInfo,
@@ -218,12 +221,8 @@ void initCurlRequestDownloadData(CURL *curl, struct CurlContext *curlContext, CU
                         "write function set 1 error");
 }
 
-void initCurlRequestCustomOptions(CURL *curl, jobject configure) {
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 60);
-    //todo:
-    if (true) {
-        curl_easy_setopt(curl, CURLOPT_PIPEWAIT, 1);
-    }
+void initCurlRequestCustomOptions(CURL *curl, struct CurlContext *curlContext, jobject configure, jobject request) {
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, getJavaCurlRequestTimeout(curlContext, request));
 }
 
 void initCurlDnsResolver(CURL *curl, struct curl_slist *dnsResolver) {
@@ -247,13 +246,14 @@ void initCurlRequestUrl(CURL *curl, const char *url, CURLcode *errorCode, const 
     }
 }
 
-void initCurlRequestMethod(CURL *curl, long httpMethod, CURLcode *errorCode, const char **errorInfo) {
-    if (httpMethod == 1) {
+void
+initCurlRequestMethod(CURL *curl, long httpMethod, CURLcode *errorCode, const char **errorInfo) {
+    if (httpMethod == Curl_Request_Http_Method_GET) {
         qn_curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L, errorCode, errorInfo,
                             "Get method set error");
-    } else if (httpMethod == 2) {
+    } else if (httpMethod == Curl_Request_Http_Method_POST) {
         qn_curl_easy_setopt(curl, CURLOPT_POST, 1L, errorCode, errorInfo, "POST method set error");
-    } else if (httpMethod == 3) {
+    } else if (httpMethod == Curl_Request_Http_Method_PUT) {
         qn_curl_easy_setopt(curl, CURLOPT_PUT, 1L, errorCode, errorInfo, "PUT method set error");
     } else {
         *errorCode = CURLE_FAILED_INIT;
@@ -262,7 +262,7 @@ void initCurlRequestMethod(CURL *curl, long httpMethod, CURLcode *errorCode, con
 }
 
 void initCurlRequestProxy(CURL *curl, const char *proxy) {
-    if (proxy != NULL){
+    if (proxy != NULL) {
         curl_easy_setopt(curl, CURLOPT_PROXY, proxy);
     }
 }
@@ -279,7 +279,7 @@ void performRequest(CURL *curl, CURLcode *errorCode, const char **errorInfo) {
 }
 
 void handleResponse(struct CurlContext *curlContext, CURL *curl) {
-    if (curl == NULL) {
+    if (curlContext == NULL || curl == NULL) {
         return;
     }
 
@@ -287,25 +287,26 @@ void handleResponse(struct CurlContext *curlContext, CURL *curl) {
     long httpVersion = 0;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &statusCode);
     curl_easy_getinfo(curl, CURLINFO_HTTP_VERSION, &httpVersion);
-    if (curlJavaIsCancel(curlContext)){
+    if (curlJavaIsCancel(curlContext)) {
         statusCode = -999;
     }
 
     char const *HTTPVersion = NULL;
-    if(httpVersion == CURL_HTTP_VERSION_1_0) {
+    if (httpVersion == CURL_HTTP_VERSION_1_0) {
         HTTPVersion = "HTTP/1.0";
-    } else if(httpVersion == CURL_HTTP_VERSION_1_1) {
+    } else if (httpVersion == CURL_HTTP_VERSION_1_1) {
         HTTPVersion = "HTTP/1.1";
-    } else if(httpVersion == CURL_HTTP_VERSION_2_0 ||
-              httpVersion == CURL_HTTP_VERSION_2TLS ||
-              httpVersion == CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE) {
+    } else if (httpVersion == CURL_HTTP_VERSION_2_0 ||
+               httpVersion == CURL_HTTP_VERSION_2TLS ||
+               httpVersion == CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE) {
         HTTPVersion = "HTTP/2";
-    } else if(httpVersion == CURL_HTTP_VERSION_3) {
+    } else if (httpVersion == CURL_HTTP_VERSION_3) {
         HTTPVersion = "HTTP/3";
     } else {
         HTTPVersion = "";
     }
-    receiveResponse(curlContext, curlContext->url, statusCode, const_cast<char *>(HTTPVersion), curlContext->responseHeaderFields);
+    receiveResponse(curlContext, curlContext->url, statusCode, const_cast<char *>(HTTPVersion),
+                    curlContext->responseHeaderFields);
 }
 
 void handleMetrics(struct CurlContext *curlContext, CURL *curl) {
@@ -350,8 +351,8 @@ void handleMetrics(struct CurlContext *curlContext, CURL *curl) {
     if (curlContext->requestHeaderFields != NULL) {
         struct curl_slist *next_headerField = curlContext->requestHeaderFields;
         long long size = 0;
-        while (next_headerField != NULL){
-            if (next_headerField->data != NULL){
+        while (next_headerField != NULL) {
+            if (next_headerField->data != NULL) {
                 size += strlen(next_headerField->data);
             }
             next_headerField = next_headerField->next;
@@ -385,28 +386,31 @@ extern "C" JNIEXPORT jlong JNICALL Java_com_qiniu_curl_Curl_globalInit(JNIEnv *e
 }
 
 
-extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv *env,
-                                                     jobject curlObj,
-                                                     jobject curlHandler,
-                                                     jobject configure,
-                                                     jstring url,
-                                                     jlong method,
-                                                     jobjectArray header,
-                                                     jbyteArray body) {
+extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv * env,
+                                                                         jobject curlObj,
+                                                                         jobject curlRequest,
+                                                                         jobject configure,
+                                                                         jobject curlHandler) {
+
 
     CURLcode errorCode = CURLE_OK;
     const char *errorInfo = nullptr;
 
     // context
     struct CurlContext curlContext;
-    curlContext.body = body;
-    curlContext.url = url;
     curlContext.env = env;
     curlContext.curlObj = curlObj;
+
+    jstring url = getJavaCurlRequestURL(&curlContext, curlRequest);
+    jobjectArray header = getJavaCurlRequestHeaderFields(&curlContext, curlRequest);
+    int httpMethod = getJavaCurlRequestHttpMethod(&curlContext, curlRequest);
+    jbyteArray body = getJavaCurlRequestBody(&curlContext, curlRequest);
+
+    curlContext.url = url;
     curlContext.curlHandler = curlHandler;
+    curlContext.body = body;
     curlContext.responseHeaderFields = NULL;
     curlContext.metrics = createJavaMetrics(&curlContext);
-
     curlContext.totalBytesExpectedToSend = curlUtilGetRequestContentLength(&curlContext, body, header);
 
     struct timeval tp;
@@ -415,21 +419,23 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
     setJavaMetricsStartTimestamp(&curlContext, timestamp);
 
     //dns
-    struct curl_slist *dnsResolver = getJavaCurlConfigurationDnsResolverArray(&curlContext, configure);
+    struct curl_slist *dnsResolver = getJavaCurlConfigurationDnsResolverArray(&curlContext,
+                                                                              configure);
 
     //header
     struct curl_slist *headerList = NULL;
     int headSize = 0;
-    if (header != NULL){
+    if (header != NULL) {
         headSize = env->GetArrayLength(header);
     }
     for (int i = 0; i < headSize; ++i) {
-        jstring headerField = (jstring)env->GetObjectArrayElement(header, i);
+        jstring headerField = (jstring) env->GetObjectArrayElement(header, i);
         const char *headerField_char = env->GetStringUTFChars(headerField, NULL);
         if (headerField_char != NULL) {
-            size_t headerField_char_size = sizeof(headerField_char);
-            char *headerField_char_cp = (char *)malloc(headerField_char_size);
-            curlUtilMemcpy(headerField_char_cp, headerField_char, headerField_char_size);
+            size_t headerField_char_size = strlen(headerField_char);
+            char *headerField_char_cp = (char *) malloc(headerField_char_size);
+            memset(headerField_char_cp, '\0', headerField_char_size);
+            strcpy(headerField_char_cp, headerField_char);
 
             headerList = curl_slist_append(headerList, headerField_char_cp);
 
@@ -440,50 +446,54 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
 
     //url
     jboolean isCopy;
-    const char *url_char = env->GetStringUTFChars(url, &isCopy);
+    const char *url_char = env->GetStringUTFChars(curlContext.url, &isCopy);
 
     CURL *curl = curl_easy_init();
     if (curl == NULL) {
         goto curl_perform_complete;
     }
 
-    initCurlRequestDefaultOptions(curl, &curlContext, &errorCode, reinterpret_cast<const char **>(&errorInfo));
-    if (errorInfo != NULL){
+    initCurlRequestDefaultOptions(curl, &curlContext, &errorCode,
+                                  reinterpret_cast<const char **>(&errorInfo));
+    if (errorInfo != NULL) {
         goto curl_perform_complete;
     }
     kCurlLogD("== Curl Debug: 1");
-    initCurlRequestCustomOptions(curl, configure);
-    initCurlRequestUploadData(curl, &curlContext, &errorCode, reinterpret_cast<const char **>(&errorInfo));
-    if (errorInfo != NULL){
+    initCurlRequestCustomOptions(curl, &curlContext, configure, curlRequest);
+    initCurlRequestUploadData(curl, &curlContext, &errorCode,
+                              reinterpret_cast<const char **>(&errorInfo));
+    if (errorInfo != NULL) {
         goto curl_perform_complete;
     }
     kCurlLogD("== Curl Debug: 2");
-    initCurlRequestDownloadData(curl, &curlContext, &errorCode, reinterpret_cast<const char **>(&errorInfo));
-    if (errorInfo != NULL){
+    initCurlRequestDownloadData(curl, &curlContext, &errorCode,
+                                reinterpret_cast<const char **>(&errorInfo));
+    if (errorInfo != NULL) {
         goto curl_perform_complete;
     }
     kCurlLogD("== Curl Debug: 3");
     initCurlDnsResolver(curl, dnsResolver);
 
     initCurlRequestProxy(curl, getJavaCurlConfigurationProxy(&curlContext, configure));
-    initCurlRequestHeader(curl, headerList, &errorCode, reinterpret_cast<const char **>(&errorInfo));
-    if (errorInfo != NULL){
+    initCurlRequestHeader(curl, headerList, &errorCode,
+                          reinterpret_cast<const char **>(&errorInfo));
+    if (errorInfo != NULL) {
         goto curl_perform_complete;
     }
     kCurlLogD("== Curl Debug: 4");
     initCurlRequestUrl(curl, url_char, &errorCode, reinterpret_cast<const char **>(&errorInfo));
-    if (errorInfo != NULL){
+    if (errorInfo != NULL) {
         goto curl_perform_complete;
     }
     kCurlLogD("== Curl Debug: 5");
-    initCurlRequestMethod(curl, method, &errorCode, reinterpret_cast<const char **>(&errorInfo));
-    if (errorInfo != NULL){
+    initCurlRequestMethod(curl, httpMethod, &errorCode, reinterpret_cast<const char **>(&errorInfo));
+    if (errorInfo != NULL) {
         goto curl_perform_complete;
     }
     kCurlLogD("== Curl Debug: 6");
-    
+
     performRequest(curl, &errorCode, reinterpret_cast<const char **>(&errorInfo));
-    if (errorInfo != NULL){
+    if (errorInfo != NULL) {
         goto curl_perform_complete;
     }
     kCurlLogD("== Curl Debug: 7");
@@ -497,7 +507,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
     env->ReleaseStringUTFChars(url, url_char);
 
     releaseCurlContext(&curlContext);
-    if (curl != NULL){
+    if (curl != NULL) {
         curl_easy_cleanup(curl);
     }
 }

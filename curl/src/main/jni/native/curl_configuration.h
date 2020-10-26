@@ -9,6 +9,8 @@
 
 struct curl_slist * getJavaCurlConfigurationDnsResolverArray(CurlContext *curlContext, jobject curlConfiguration);
 
-char * getJavaCurlConfigurationProxy(CurlContext *curlContext, jobject curlConfiguration);
+char *getJavaCurlConfigurationProxy(CurlContext *curlContext, jobject curlConfiguration);
+
+char *getJavaCurlConfigurationProxyUserPwd(CurlContext *curlContext, jobject curlConfiguration);
 
 #endif //CURLDEMO_CURL_CONFIGURATION_H

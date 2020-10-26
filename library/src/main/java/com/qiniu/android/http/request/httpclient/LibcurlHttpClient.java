@@ -11,6 +11,7 @@ import com.qiniu.android.utils.StringUtils;
 import com.qiniu.curl.Curl;
 import com.qiniu.curl.CurlConfiguration;
 import com.qiniu.curl.CurlHandlerI;
+import com.qiniu.curl.CurlRequest;
 import com.qiniu.curl.CurlResponse;
 import com.qiniu.curl.CurlTransactionMetrics;
 
@@ -100,7 +101,7 @@ public class LibcurlHttpClient implements IRequestClient {
                          final RequestClientCompleteHandler complete){
 
         String url = request.urlString;
-        long method = 1;
+        int method = 1;
         if (request.httpMethod.equals("Get")){
             method = 1;
         } else if (request.httpMethod.equals("POST")){
@@ -111,10 +112,11 @@ public class LibcurlHttpClient implements IRequestClient {
         Map<String, String> header = request.allHeaders;
         byte[] body = request.httpBody;
 
+        CurlRequest curlRequest = new CurlRequest(url, method, header, body, request.timeout);
         httpClient = new Curl();
         curlGlobalInit(httpClient);
 
-        httpClient.request(new CurlHandlerI() {
+        httpClient.request(curlRequest, curlConfiguration, new CurlHandlerI() {
             @Override
             public void receiveResponse(CurlResponse curlResponse) {
                 response = curlResponse;
@@ -186,7 +188,7 @@ public class LibcurlHttpClient implements IRequestClient {
 
             }
 
-        }, curlConfiguration, url, method, header, body);
+        });
     }
 
     private synchronized void handleError(Request request,

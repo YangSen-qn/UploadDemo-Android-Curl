@@ -52,10 +52,13 @@ void receiveResponse(CurlContext *curlContext, jstring url, int statusCode, char
         int index = 0;
         struct curl_slist *headerField = headerFields;
         while (headerField != NULL && index < size) {
-
-            jstring value = env->NewStringUTF(headerField->data);
-            env->SetObjectArrayElement(headerFieldArray, index, value);
-            index++;
+            if (headerField->data != NULL){
+                jstring value = env->NewStringUTF(headerField->data);
+                if (value != NULL){
+                    env->SetObjectArrayElement(headerFieldArray, index, value);
+                    index++;
+                }
+            }
             headerField = headerField->next;
         }
     }

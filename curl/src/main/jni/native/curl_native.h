@@ -30,7 +30,7 @@ JNIEXPORT jlong JNICALL Java_com_qiniu_curl_Curl_globalInit(JNIEnv *, jobject);
  * Method:    request
  * Signature: (Ljava/lang/Object;Ljava/lang/String;J[Ljava/lang/Object;[B)J
  */
-JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv *, jobject, jobject curlHandler, jobject, jstring, jlong, jobjectArray, jbyteArray);
+JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv *, jobject, jobject curlRequest, jobject configure, jobject curlHandler);
 
 #ifdef __cplusplus
 }
