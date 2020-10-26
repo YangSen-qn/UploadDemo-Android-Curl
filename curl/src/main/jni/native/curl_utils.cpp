@@ -139,3 +139,25 @@ curlUtilGetRequestContentLength(CurlContext *curlContext, jbyteArray body, jobje
     }
     return contentLength;
 }
+
+// 返回的char *需要delete
+char* curlUtilConvertJByteArrayToChars(CurlContext *curlContext, jbyteArray byteArray) {
+    if (curlContext == NULL || curlContext->env == NULL) {
+        return 0;
+    }
+
+    JNIEnv *env = curlContext->env;
+
+    char *chars = NULL;
+    jbyte *bytes = env->GetByteArrayElements(byteArray, 0);
+
+    int chars_len = env->GetArrayLength(byteArray);
+    chars = new char[chars_len + 1];
+    memset(chars, 0, static_cast<size_t>(chars_len + 1));
+    memcpy(chars, bytes, static_cast<size_t>(chars_len));
+    chars[chars_len] = 0;
+
+    env->ReleaseByteArrayElements(byteArray, bytes, 0);
+
+    return chars;
+}

@@ -40,22 +40,6 @@
     } \
 }
 
-
-char* convertJByteArrayToChars(JNIEnv *env, jbyteArray byteArray) {
-    char *chars = NULL;
-    jbyte *bytes = env->GetByteArrayElements(byteArray, 0);
-
-    int chars_len = env->GetArrayLength(byteArray);
-    chars = new char[chars_len + 1];
-    memset(chars, 0, static_cast<size_t>(chars_len + 1));
-    memcpy(chars, bytes, static_cast<size_t>(chars_len));
-    chars[chars_len] = 0;
-
-    env->ReleaseByteArrayElements(byteArray, bytes, 0);
-
-    return chars;
-}
-
 //-------------------------------------------- Curl filed ------------------------------------------
 bool curlJavaIsCancel(struct CurlContext *curlContext){
     if (curlContext == NULL) {
@@ -422,7 +406,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
     curlContext.curlHandler = curlHandler;
     curlContext.responseHeaderFields = NULL;
     curlContext.metrics = createJavaMetrics(&curlContext);
-    //todo: body传入冗余，依赖于回调取数据
+
     curlContext.totalBytesExpectedToSend = curlUtilGetRequestContentLength(&curlContext, body, header);
 
     struct timeval tp;
@@ -443,7 +427,12 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
         jstring headerField = (jstring)env->GetObjectArrayElement(header, i);
         const char *headerField_char = env->GetStringUTFChars(headerField, NULL);
         if (headerField_char != NULL) {
-            headerList = curl_slist_append(headerList, headerField_char);
+            size_t headerField_char_size = sizeof(headerField_char);
+            char *headerField_char_cp = (char *)malloc(headerField_char_size);
+            curlUtilMemcpy(headerField_char_cp, headerField_char, headerField_char_size);
+
+            headerList = curl_slist_append(headerList, headerField_char_cp);
+
             env->ReleaseStringUTFChars(headerField, headerField_char);
         }
     }
@@ -506,12 +495,8 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
     completeWithError(&curlContext, errorCode, reinterpret_cast<const char *>(&errorInfo));
 
     env->ReleaseStringUTFChars(url, url_char);
-    if (dnsResolver != NULL) {
-        curl_slist_free_all(dnsResolver);
-    }
-    if (headerList != NULL) {
-        curl_slist_free_all(headerList);
-    }
+
+    releaseCurlContext(&curlContext);
     if (curl != NULL){
         curl_easy_cleanup(curl);
     }
