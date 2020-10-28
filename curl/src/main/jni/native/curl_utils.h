@@ -19,4 +19,7 @@ long curlUtilGetRequestContentLength(JNIEnv *env, jbyteArray body, jobjectArray 
 // 返回的char *需要delete
 char* curlUtilConvertJByteArrayToChars(JNIEnv *env, jbyteArray byteArray);
 
+
+int transformCurlStatusCode(int statusCode);
+
 #endif //UPLOADDEMO_ANDROID_CURL_UTILS_H

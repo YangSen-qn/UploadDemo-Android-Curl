@@ -2,11 +2,11 @@ package com.qiniu.curl;
 
 import java.util.HashMap;
 
-public class CurlHandler {
+class CurlHandler {
 
     private final CurlHandlerI curlHandler;
 
-    public CurlHandler(CurlHandlerI curlHandler) {
+    CurlHandler(CurlHandlerI curlHandler) {
         this.curlHandler = curlHandler;
     }
 
