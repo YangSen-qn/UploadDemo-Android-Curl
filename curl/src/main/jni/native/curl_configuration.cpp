@@ -143,3 +143,48 @@ char *getJavaCurlConfigurationProxyUserPwd(CurlContext *curlContext, jobject cur
 
     return userPwd_char;
 }
+
+
+char *getJavaCurlConfigurationCAPath(CurlContext *curlContext, jobject curlConfiguration) {
+    if (curlContext == NULL || curlConfiguration == NULL) {
+        return NULL;
+    }
+
+    JNIEnv *env = curlContext->env;
+    if (env == NULL) {
+        return NULL;
+    }
+
+    jclass config_class = env->FindClass("com/qiniu/curl/CurlConfiguration");
+    if (config_class == NULL) {
+        return NULL;
+    }
+
+    jmethodID getCAPath_method = env->GetMethodID(config_class,
+                                                  "getCAPath",
+                                                  "()Ljava/lang/String;");
+    if (getCAPath_method == NULL) {
+        env->DeleteLocalRef(config_class);
+        return NULL;
+    }
+
+    char *caPath_char = NULL;
+    jstring caPath = (jstring) env->CallObjectMethod(curlConfiguration, getCAPath_method);
+    if (caPath != NULL) {
+        jboolean isCopy;
+        char *caPath_char_p = const_cast<char *>(env->GetStringUTFChars(caPath, &isCopy));
+        if (caPath_char_p != NULL) {
+            size_t userPwd_char_size = strlen(caPath_char_p);
+            caPath_char = (char *) malloc(userPwd_char_size);
+            memset(caPath_char, '\0', userPwd_char_size);
+            strcpy(caPath_char, caPath_char_p);
+
+            env->ReleaseStringUTFChars(caPath, caPath_char_p);
+        }
+    }
+
+    env->DeleteLocalRef(config_class);
+    env->DeleteLocalRef(caPath);
+
+    return caPath_char;
+}

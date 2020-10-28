@@ -172,12 +172,7 @@ void initCurlRequestDefaultOptions(CURL *curl, struct CurlContext *curlContext, 
 //    curl_easy_setopt(curl, CURLOPT_PIPEWAIT, 1);
     curl_easy_setopt(curl, CURLOPT_DNS_CACHE_TIMEOUT, 10L);
     curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
-    //todo: CA证书配置
-//  curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_DEFAULT);
-//  curl_easy_setopt(curl, CURLOPT_SSL_CIPHER_LIST, "ALL");
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-//    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, NULL);
+
 
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
     curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, CurlDebugCallback);
@@ -223,6 +218,20 @@ void initCurlRequestDownloadData(CURL *curl, struct CurlContext *curlContext, CU
 
 void initCurlRequestCustomOptions(CURL *curl, struct CurlContext *curlContext, jobject configure, jobject request) {
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, getJavaCurlRequestTimeout(curlContext, request));
+
+    //todo: CA证书配置
+    char * caPath = getJavaCurlConfigurationCAPath(curlContext, configure);
+    if (caPath != NULL && strlen(caPath) > 0){
+        curl_easy_setopt(curl, CURLOPT_CAINFO, caPath);
+        curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_DEFAULT);
+        curl_easy_setopt(curl, CURLOPT_SSL_CIPHER_LIST, "ALL");
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1L);
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, NULL);
+    } else {
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    }
 }
 
 void initCurlDnsResolver(CURL *curl, struct curl_slist *dnsResolver) {

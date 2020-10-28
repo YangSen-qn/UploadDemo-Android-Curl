@@ -13,4 +13,6 @@ char *getJavaCurlConfigurationProxy(CurlContext *curlContext, jobject curlConfig
 
 char *getJavaCurlConfigurationProxyUserPwd(CurlContext *curlContext, jobject curlConfiguration);
 
+char *getJavaCurlConfigurationCAPath(CurlContext *curlContext, jobject curlConfiguration);
+
 #endif //CURLDEMO_CURL_CONFIGURATION_H
