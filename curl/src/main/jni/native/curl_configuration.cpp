@@ -7,14 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct curl_slist *
-getJavaCurlConfigurationDnsResolverArray(CurlContext *curlContext, jobject curlConfiguration) {
-    if (curlContext == NULL || curlConfiguration == NULL) {
-        return NULL;
-    }
-
-    JNIEnv *env = curlContext->env;
-    if (env == NULL) {
+struct curl_slist * getJavaCurlConfigurationDnsResolverArray(JNIEnv *env, jobject curlConfiguration) {
+    if (env == NULL || curlConfiguration == NULL) {
         return NULL;
     }
 
@@ -54,13 +48,8 @@ getJavaCurlConfigurationDnsResolverArray(CurlContext *curlContext, jobject curlC
     return dnsResolverList;
 }
 
-char *getJavaCurlConfigurationProxy(CurlContext *curlContext, jobject curlConfiguration) {
-    if (curlContext == NULL || curlConfiguration == NULL) {
-        return NULL;
-    }
-
-    JNIEnv *env = curlContext->env;
-    if (env == NULL) {
+char * getJavaCurlConfigurationProxy(JNIEnv *env, jobject curlConfiguration) {
+    if (env == NULL || curlConfiguration == NULL) {
         return NULL;
     }
 
@@ -99,13 +88,8 @@ char *getJavaCurlConfigurationProxy(CurlContext *curlContext, jobject curlConfig
     return proxy_char;
 }
 
-char *getJavaCurlConfigurationProxyUserPwd(CurlContext *curlContext, jobject curlConfiguration) {
-    if (curlContext == NULL || curlConfiguration == NULL) {
-        return NULL;
-    }
-
-    JNIEnv *env = curlContext->env;
-    if (env == NULL) {
+char *getJavaCurlConfigurationProxyUserPwd(JNIEnv *env, jobject curlConfiguration) {
+    if (env == NULL || curlConfiguration == NULL) {
         return NULL;
     }
 
@@ -145,13 +129,8 @@ char *getJavaCurlConfigurationProxyUserPwd(CurlContext *curlContext, jobject cur
 }
 
 
-char *getJavaCurlConfigurationCAPath(CurlContext *curlContext, jobject curlConfiguration) {
-    if (curlContext == NULL || curlConfiguration == NULL) {
-        return NULL;
-    }
-
-    JNIEnv *env = curlContext->env;
-    if (env == NULL) {
+char *getJavaCurlConfigurationCAPath(JNIEnv *env, jobject curlConfiguration) {
+    if (env == NULL || curlConfiguration == NULL) {
         return NULL;
     }
 
@@ -187,4 +166,15 @@ char *getJavaCurlConfigurationCAPath(CurlContext *curlContext, jobject curlConfi
     env->DeleteLocalRef(caPath);
 
     return caPath_char;
+}
+
+void setCurlContextWithConfiguration(JNIEnv *env, CurlContext *curlContext, jobject curlConfiguration){
+    if (env == NULL) {
+        return;
+    }
+
+    curlContext->proxy = getJavaCurlConfigurationProxy(env, curlConfiguration);
+    curlContext->proxyUserPwd = getJavaCurlConfigurationProxyUserPwd(env, curlConfiguration);
+    curlContext->caPath = getJavaCurlConfigurationCAPath(env, curlConfiguration);
+    curlContext->dnsResolverArray = getJavaCurlConfigurationDnsResolverArray(env, curlConfiguration);
 }

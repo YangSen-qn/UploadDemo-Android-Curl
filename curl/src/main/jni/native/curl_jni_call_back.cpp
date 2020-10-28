@@ -7,7 +7,7 @@
 #include "curl_jni_call_back.h"
 #include "curl_context.h"
 
-void receiveResponse(CurlContext *curlContext, jstring url, int statusCode, char *httPVersion,
+void receiveResponse(CurlContext *curlContext, char *url, int statusCode, char *httPVersion,
                      struct curl_slist *headerFields) {
     if (curlContext == NULL) {
         return;
@@ -32,9 +32,13 @@ void receiveResponse(CurlContext *curlContext, jstring url, int statusCode, char
         return;
     }
 
+    jstring url_string = NULL;
     jstring httPVersion_string = NULL;
     jobjectArray headerFieldArray = NULL;
 
+    if (url != NULL) {
+        url_string = env->NewStringUTF(url);
+    }
     if (httPVersion != NULL) {
         httPVersion_string = env->NewStringUTF(httPVersion);
     }
@@ -63,9 +67,10 @@ void receiveResponse(CurlContext *curlContext, jstring url, int statusCode, char
         }
     }
 
-    env->CallVoidMethod(curlHandler, receiveResponse_method, url, statusCode, httPVersion_string,
+    env->CallVoidMethod(curlHandler, receiveResponse_method, url_string, statusCode, httPVersion_string,
                         headerFieldArray);
 
+    env->DeleteLocalRef(url_string);
     env->DeleteLocalRef(handler_class);
     env->DeleteLocalRef(httPVersion_string);
     if (headerFieldArray != NULL) {

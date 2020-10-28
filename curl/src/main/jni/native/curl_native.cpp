@@ -216,12 +216,16 @@ void initCurlRequestDownloadData(CURL *curl, struct CurlContext *curlContext, CU
                         "write function set 1 error");
 }
 
-void initCurlRequestCustomOptions(CURL *curl, struct CurlContext *curlContext, jobject configure, jobject request) {
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, getJavaCurlRequestTimeout(curlContext, request));
+void initCurlRequestCustomOptions(CURL *curl, struct CurlContext *curlContext) {
+    if (curlContext == NULL){
+        return;
+    }
+
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, curlContext->requestTimeout);
 
     //todo: CA证书配置
-    char * caPath = getJavaCurlConfigurationCAPath(curlContext, configure);
-    if (caPath != NULL && strlen(caPath) > 0){
+    char *caPath = curlContext->caPath;
+    if (caPath != NULL && strlen(caPath) > 0) {
         curl_easy_setopt(curl, CURLOPT_CAINFO, caPath);
         curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_DEFAULT);
         curl_easy_setopt(curl, CURLOPT_SSL_CIPHER_LIST, "ALL");
@@ -234,29 +238,32 @@ void initCurlRequestCustomOptions(CURL *curl, struct CurlContext *curlContext, j
     }
 }
 
-void initCurlDnsResolver(CURL *curl, struct curl_slist *dnsResolver) {
-    if (dnsResolver != NULL) {
-        curl_easy_setopt(curl, CURLOPT_RESOLVE, dnsResolver);
+void initCurlDnsResolver(CURL *curl, struct CurlContext *curlContext) {
+    if (curlContext != NULL && curlContext->dnsResolverArray != NULL) {
+        curl_easy_setopt(curl, CURLOPT_RESOLVE, curlContext->dnsResolverArray);
     }
 }
 
-void initCurlRequestHeader(CURL *curl, struct curl_slist *headerList, CURLcode *errorCode,
+void initCurlRequestHeader(CURL *curl, struct CurlContext *curlContext, CURLcode *errorCode,
                            const char **errorInfo) {
-    if (headerList != NULL) {
-        qn_curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerList, errorCode, errorInfo,
+    if (curlContext != NULL && curlContext->requestHeaderFields != NULL) {
+        qn_curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curlContext->requestHeaderFields, errorCode, errorInfo,
                             "header set error");
     }
 }
 
-void initCurlRequestUrl(CURL *curl, const char *url, CURLcode *errorCode, const char **errorInfo) {
-    kCurlLogD("== url:%s", url);
-    if (url != NULL) {
-        qn_curl_easy_setopt(curl, CURLOPT_URL, url, errorCode, errorInfo, "url set error");
+void initCurlRequestUrl(CURL *curl, struct CurlContext *curlContext, CURLcode *errorCode, const char **errorInfo) {
+    if (curlContext != NULL && curlContext->url != NULL) {
+        qn_curl_easy_setopt(curl, CURLOPT_URL, curlContext->url, errorCode, errorInfo, "url set error");
     }
 }
 
 void
-initCurlRequestMethod(CURL *curl, long httpMethod, CURLcode *errorCode, const char **errorInfo) {
+initCurlRequestMethod(CURL *curl, struct CurlContext *curlContext, CURLcode *errorCode, const char **errorInfo) {
+    if (curlContext == NULL) {
+        return;
+    }
+    int httpMethod = curlContext->requestMethod;
     if (httpMethod == Curl_Request_Http_Method_GET) {
         qn_curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L, errorCode, errorInfo,
                             "Get method set error");
@@ -270,9 +277,9 @@ initCurlRequestMethod(CURL *curl, long httpMethod, CURLcode *errorCode, const ch
     }
 }
 
-void initCurlRequestProxy(CURL *curl, const char *proxy) {
-    if (proxy != NULL) {
-        curl_easy_setopt(curl, CURLOPT_PROXY, proxy);
+void initCurlRequestProxy(CURL *curl, struct CurlContext *curlContext) {
+    if (curlContext != NULL && curlContext->proxy != NULL ) {
+        curl_easy_setopt(curl, CURLOPT_PROXY, curlContext->proxy);
     }
 }
 
@@ -395,7 +402,7 @@ extern "C" JNIEXPORT jlong JNICALL Java_com_qiniu_curl_Curl_globalInit(JNIEnv *e
 }
 
 
-extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv * env,
+extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv *env,
                                                                          jobject curlObj,
                                                                          jobject curlRequest,
                                                                          jobject configure,
@@ -409,53 +416,18 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
     struct CurlContext curlContext;
     curlContext.env = env;
     curlContext.curlObj = curlObj;
-
-    jstring url = getJavaCurlRequestURL(&curlContext, curlRequest);
-    jobjectArray header = getJavaCurlRequestHeaderFields(&curlContext, curlRequest);
-    int httpMethod = getJavaCurlRequestHttpMethod(&curlContext, curlRequest);
-    jbyteArray body = getJavaCurlRequestBody(&curlContext, curlRequest);
-
-    curlContext.url = url;
     curlContext.curlHandler = curlHandler;
-    curlContext.body = body;
     curlContext.responseHeaderFields = NULL;
     curlContext.metrics = createJavaMetrics(&curlContext);
-    curlContext.totalBytesExpectedToSend = curlUtilGetRequestContentLength(&curlContext, body, header);
 
+    setCurlContextWithRequest(env, &curlContext, curlRequest);
+    setCurlContextWithConfiguration(env, &curlContext, configure);
+
+    // start time
     struct timeval tp;
     gettimeofday(&tp, NULL);
     long int timestamp = tp.tv_sec * 1000 + tp.tv_usec / 1000;
     setJavaMetricsStartTimestamp(&curlContext, timestamp);
-
-    //dns
-    struct curl_slist *dnsResolver = getJavaCurlConfigurationDnsResolverArray(&curlContext,
-                                                                              configure);
-
-    //header
-    struct curl_slist *headerList = NULL;
-    int headSize = 0;
-    if (header != NULL) {
-        headSize = env->GetArrayLength(header);
-    }
-    for (int i = 0; i < headSize; ++i) {
-        jstring headerField = (jstring) env->GetObjectArrayElement(header, i);
-        const char *headerField_char = env->GetStringUTFChars(headerField, NULL);
-        if (headerField_char != NULL) {
-            size_t headerField_char_size = strlen(headerField_char);
-            char *headerField_char_cp = (char *) malloc(headerField_char_size);
-            memset(headerField_char_cp, '\0', headerField_char_size);
-            strcpy(headerField_char_cp, headerField_char);
-
-            headerList = curl_slist_append(headerList, headerField_char_cp);
-
-            env->ReleaseStringUTFChars(headerField, headerField_char);
-        }
-    }
-    curlContext.requestHeaderFields = headerList;
-
-    //url
-    jboolean isCopy;
-    const char *url_char = env->GetStringUTFChars(curlContext.url, &isCopy);
 
     CURL *curl = curl_easy_init();
     if (curl == NULL) {
@@ -468,7 +440,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
         goto curl_perform_complete;
     }
     kCurlLogD("== Curl Debug: 1");
-    initCurlRequestCustomOptions(curl, &curlContext, configure, curlRequest);
+    initCurlRequestCustomOptions(curl, &curlContext);
     initCurlRequestUploadData(curl, &curlContext, &errorCode,
                               reinterpret_cast<const char **>(&errorInfo));
     if (errorInfo != NULL) {
@@ -481,21 +453,21 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
         goto curl_perform_complete;
     }
     kCurlLogD("== Curl Debug: 3");
-    initCurlDnsResolver(curl, dnsResolver);
-
-    initCurlRequestProxy(curl, getJavaCurlConfigurationProxy(&curlContext, configure));
-    initCurlRequestHeader(curl, headerList, &errorCode,
+    initCurlDnsResolver(curl, &curlContext);
+    initCurlRequestProxy(curl, &curlContext);
+    initCurlRequestHeader(curl, &curlContext, &errorCode,
                           reinterpret_cast<const char **>(&errorInfo));
     if (errorInfo != NULL) {
         goto curl_perform_complete;
     }
     kCurlLogD("== Curl Debug: 4");
-    initCurlRequestUrl(curl, url_char, &errorCode, reinterpret_cast<const char **>(&errorInfo));
+    initCurlRequestUrl(curl, &curlContext, &errorCode, reinterpret_cast<const char **>(&errorInfo));
     if (errorInfo != NULL) {
         goto curl_perform_complete;
     }
     kCurlLogD("== Curl Debug: 5");
-    initCurlRequestMethod(curl, httpMethod, &errorCode, reinterpret_cast<const char **>(&errorInfo));
+    initCurlRequestMethod(curl, &curlContext, &errorCode,
+                          reinterpret_cast<const char **>(&errorInfo));
     if (errorInfo != NULL) {
         goto curl_perform_complete;
     }
@@ -512,8 +484,6 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
     kCurlLogD("== Curl Debug: 8    error code:%d %s", errorCode, errorInfo);
 
     completeWithError(&curlContext, errorCode, reinterpret_cast<const char *>(&errorInfo));
-
-    env->ReleaseStringUTFChars(url, url_char);
 
     releaseCurlContext(&curlContext);
     if (curl != NULL) {

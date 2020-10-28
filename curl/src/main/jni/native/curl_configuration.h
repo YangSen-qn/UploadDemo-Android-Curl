@@ -2,17 +2,12 @@
 // Created by yangsen on 2020/9/18.
 //
 
+#include <curl/curl.h>
+#include "curl_context.h"
+
 #ifndef CURLDEMO_CURL_CONFIGURATION_H
 #define CURLDEMO_CURL_CONFIGURATION_H
 
-#include <curl/curl.h>
-
-struct curl_slist * getJavaCurlConfigurationDnsResolverArray(CurlContext *curlContext, jobject curlConfiguration);
-
-char *getJavaCurlConfigurationProxy(CurlContext *curlContext, jobject curlConfiguration);
-
-char *getJavaCurlConfigurationProxyUserPwd(CurlContext *curlContext, jobject curlConfiguration);
-
-char *getJavaCurlConfigurationCAPath(CurlContext *curlContext, jobject curlConfiguration);
+void setCurlContextWithConfiguration(JNIEnv *env, CurlContext *curlContext, jobject curlConfiguration);
 
 #endif //CURLDEMO_CURL_CONFIGURATION_H

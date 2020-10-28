@@ -12,14 +12,6 @@
 #define Curl_Request_Http_Method_PUT 3
 #define Curl_Request_Http_Method_DELETE 4
 
-jstring getJavaCurlRequestURL(CurlContext *curlContext, jobject curlRequest);
-
-int getJavaCurlRequestHttpMethod(CurlContext *curlContext, jobject curlRequest);
-
-jobjectArray getJavaCurlRequestHeaderFields(CurlContext *curlContext, jobject curlRequest);
-
-jbyteArray getJavaCurlRequestBody(CurlContext *curlContext, jobject curlRequest);
-
-int getJavaCurlRequestTimeout(CurlContext *curlContext, jobject curlRequest);
+void setCurlContextWithRequest(JNIEnv *env, CurlContext *curlContext, jobject curlRequest);
 
 #endif //UPLOADDEMO_ANDROID_CURL_REQUEST_H

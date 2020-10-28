@@ -11,9 +11,10 @@ struct CurlContext {
     // 外部引入，内存无需释放
     JNIEnv *env;
     jobject curlObj;
-    jstring url;
-    jbyteArray body;
     jobject curlHandler;
+    jbyteArray body;
+    int requestMethod;
+    int requestTimeout;
 
     double totalBytesSent;
     double totalBytesExpectedToSend;
@@ -21,6 +22,11 @@ struct CurlContext {
     double totalBytesExpectedToReceive;
 
     // 内部创建，内存需要释放
+    char * url;
+    char * proxy;
+    char * proxyUserPwd;
+    char * caPath;
+    struct curl_slist * dnsResolverArray;
     struct curl_slist *requestHeaderFields;
     struct curl_slist *responseHeaderFields;
 

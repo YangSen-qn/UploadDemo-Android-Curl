@@ -78,12 +78,7 @@ int curlUtilStrReplace(char *p_result, char *p_source, char *p_seach, char *p_re
 }
 
 long
-curlUtilGetRequestContentLength(CurlContext *curlContext, jbyteArray body, jobjectArray header) {
-    if (curlContext == NULL || curlContext->env == NULL) {
-        return 0;
-    }
-
-    JNIEnv *env = curlContext->env;
+curlUtilGetRequestContentLength(JNIEnv *env, jbyteArray body, jobjectArray header) {
     if (body != NULL) {
         return env->GetArrayLength(body);
     }
@@ -133,12 +128,10 @@ curlUtilGetRequestContentLength(CurlContext *curlContext, jbyteArray body, jobje
 }
 
 // 返回的char *需要delete
-char* curlUtilConvertJByteArrayToChars(CurlContext *curlContext, jbyteArray byteArray) {
-    if (curlContext == NULL || curlContext->env == NULL) {
+char* curlUtilConvertJByteArrayToChars(JNIEnv *env, jbyteArray byteArray) {
+    if (env == NULL) {
         return 0;
     }
-
-    JNIEnv *env = curlContext->env;
 
     char *chars = NULL;
     jbyte *bytes = env->GetByteArrayElements(byteArray, 0);

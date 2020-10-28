@@ -14,9 +14,9 @@ char * curlUtilStrStr(char * ps,char *pd);
 
 int curlUtilStrReplace(char *p_result,char* p_source,char* p_seach,char *p_repstr);
 
-long curlUtilGetRequestContentLength(CurlContext *curlContext, jbyteArray body, jobjectArray header);
+long curlUtilGetRequestContentLength(JNIEnv *env, jbyteArray body, jobjectArray header);
 
 // 返回的char *需要delete
-char* curlUtilConvertJByteArrayToChars(CurlContext *curlContext, jbyteArray byteArray);
+char* curlUtilConvertJByteArrayToChars(JNIEnv *env, jbyteArray byteArray);
 
 #endif //UPLOADDEMO_ANDROID_CURL_UTILS_H

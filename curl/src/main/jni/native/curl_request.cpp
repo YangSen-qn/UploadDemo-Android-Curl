@@ -2,15 +2,12 @@
 // Created by yangsen on 2020/10/26.
 //
 
+#include "stdlib.h"
 #include "curl_request.h"
+#include "curl_utils.h"
 
-jstring getJavaCurlRequestURL(CurlContext *curlContext, jobject curlRequest) {
-    if (curlContext == NULL || curlRequest == NULL) {
-        return NULL;
-    }
-
-    JNIEnv *env = curlContext->env;
-    if (env == NULL) {
+char * getJavaCurlRequestURL(JNIEnv *env, jobject curlRequest) {
+    if (env == NULL || curlRequest == NULL) {
         return NULL;
     }
 
@@ -27,20 +24,30 @@ jstring getJavaCurlRequestURL(CurlContext *curlContext, jobject curlRequest) {
         return NULL;
     }
 
+
+    char *url_char = NULL;
     jstring url = (jstring) env->CallObjectMethod(curlRequest, getUrlString_method);
+    if (url != NULL) {
+        jboolean isCopy;
+        char *url_char_p = const_cast<char *>(env->GetStringUTFChars(url, &isCopy));
+        if (url_char_p != NULL) {
+            size_t userPwd_char_size = strlen(url_char_p);
+            url_char = (char *) malloc(userPwd_char_size);
+            memset(url_char, '\0', userPwd_char_size);
+            strcpy(url_char, url_char_p);
 
-    env->DeleteLocalRef(request_class);
-
-    return url;
-}
-
-int getJavaCurlRequestHttpMethod(CurlContext *curlContext, jobject curlRequest) {
-    if (curlContext == NULL || curlRequest == NULL) {
-        return Curl_Request_Http_Method_GET;
+            env->ReleaseStringUTFChars(url, url_char_p);
+        }
     }
 
-    JNIEnv *env = curlContext->env;
-    if (env == NULL) {
+    env->DeleteLocalRef(url);
+    env->DeleteLocalRef(request_class);
+
+    return url_char;
+}
+
+int getJavaCurlRequestHttpMethod(JNIEnv *env, jobject curlRequest) {
+    if (env == NULL || curlRequest == NULL) {
         return Curl_Request_Http_Method_GET;
     }
 
@@ -64,13 +71,8 @@ int getJavaCurlRequestHttpMethod(CurlContext *curlContext, jobject curlRequest) 
     return httpMethod;
 }
 
-jobjectArray getJavaCurlRequestHeaderFields(CurlContext *curlContext, jobject curlRequest) {
-    if (curlContext == NULL || curlRequest == NULL) {
-        return NULL;
-    }
-
-    JNIEnv *env = curlContext->env;
-    if (env == NULL) {
+jobjectArray getJavaCurlRequestHeaderFields(JNIEnv *env, jobject curlRequest) {
+    if (env == NULL || curlRequest == NULL) {
         return NULL;
     }
 
@@ -95,13 +97,36 @@ jobjectArray getJavaCurlRequestHeaderFields(CurlContext *curlContext, jobject cu
     return headerList;
 }
 
-jbyteArray getJavaCurlRequestBody(CurlContext *curlContext, jobject curlRequest) {
-    if (curlContext == NULL || curlRequest == NULL) {
+struct curl_slist * getJavaCurlRequestHeaderCList(JNIEnv *env, jobject curlRequest){
+    if (env == NULL || curlRequest == NULL) {
         return NULL;
     }
 
-    JNIEnv *env = curlContext->env;
-    if (env == NULL) {
+    jobjectArray requestHeader = getJavaCurlRequestHeaderFields(env, curlRequest);
+    struct curl_slist *headerList = NULL;
+    int headSize = 0;
+    if (requestHeader != NULL) {
+        headSize = env->GetArrayLength(requestHeader);
+    }
+    for (int i = 0; i < headSize; ++i) {
+        jstring headerField = (jstring) env->GetObjectArrayElement(requestHeader, i);
+        const char *headerField_char = env->GetStringUTFChars(headerField, NULL);
+        if (headerField_char != NULL) {
+            size_t headerField_char_size = strlen(headerField_char);
+            char *headerField_char_cp = (char *) malloc(headerField_char_size);
+            memset(headerField_char_cp, '\0', headerField_char_size);
+            strcpy(headerField_char_cp, headerField_char);
+
+            headerList = curl_slist_append(headerList, headerField_char_cp);
+
+            env->ReleaseStringUTFChars(headerField, headerField_char);
+        }
+    }
+    return headerList;
+}
+
+jbyteArray getJavaCurlRequestBody(JNIEnv *env, jobject curlRequest) {
+    if (env == NULL || curlRequest == NULL) {
         return NULL;
     }
 
@@ -125,13 +150,8 @@ jbyteArray getJavaCurlRequestBody(CurlContext *curlContext, jobject curlRequest)
     return body;
 }
 
-int getJavaCurlRequestTimeout(CurlContext *curlContext, jobject curlRequest) {
-    if (curlContext == NULL || curlRequest == NULL) {
-        return 60;
-    }
-
-    JNIEnv *env = curlContext->env;
-    if (env == NULL) {
+int getJavaCurlRequestTimeout(JNIEnv *env, jobject curlRequest) {
+    if (env == NULL || curlRequest == NULL) {
         return 60;
     }
 
@@ -153,4 +173,19 @@ int getJavaCurlRequestTimeout(CurlContext *curlContext, jobject curlRequest) {
     env->DeleteLocalRef(request_class);
 
     return timeout;
+}
+
+void setCurlContextWithRequest(CurlContext *curlContext, jobject curlRequest){
+    JNIEnv *env = curlContext->env;
+    if (env == NULL || curlRequest == NULL) {
+        return;
+    }
+    curlContext->url = getJavaCurlRequestURL(env, curlRequest);
+    curlContext->requestHeaderFields = getJavaCurlRequestHeaderCList(env, curlRequest);
+    curlContext->body = getJavaCurlRequestBody(env, curlRequest);
+    curlContext->requestMethod = getJavaCurlRequestHttpMethod(env, curlRequest);
+    curlContext->requestTimeout = getJavaCurlRequestTimeout(env, curlRequest);
+    jobjectArray requestHeader = getJavaCurlRequestHeaderFields(env, curlRequest);
+    curlContext->totalBytesExpectedToSend = curlUtilGetRequestContentLength(env, curlContext->body,
+                                                                            requestHeader);
 }
