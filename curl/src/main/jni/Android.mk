@@ -13,19 +13,50 @@
 #
 #include $(BUILD_SHARED_LIBRARY)
 
-
+LOCAL_PATH := $(call my-dir)
+################################################################################
+#crypto prebuilt
+include $(CLEAR_VARS)
+LOCAL_MODULE := crypto-built
+LOCAL_SRC_FILES := \
+  $(LOCAL_PATH)/lib/$(TARGET_ARCH_ABI)/libcrypto.a
+include $(PREBUILT_STATIC_LIBRARY)
+################################################################################
+#ssl prebuilt
+include $(CLEAR_VARS)
+LOCAL_MODULE := ssl-built
+LOCAL_SRC_FILES := \
+  $(LOCAL_PATH)/lib/$(TARGET_ARCH_ABI)/libssl.a
+include $(PREBUILT_STATIC_LIBRARY)
+################################################################################
+#quiche prebuilt
+include $(CLEAR_VARS)
+LOCAL_MODULE := quiche-built
+LOCAL_SRC_FILES := \
+  $(LOCAL_PATH)/lib/$(TARGET_ARCH_ABI)/libquiche.a
+#LOCAL_STATIC_LIBRARIES := ssl-built crypto-built
+  #LOCAL_WHOLE_STATIC_LIBRARIES += ssl-built crypto-built
+include $(PREBUILT_STATIC_LIBRARY)
 ################################################################################
 
-LOCAL_PATH := $(call my-dir)
-
+#nghttp2 prebuilt
+include $(CLEAR_VARS)
+LOCAL_MODULE := nghttp2-built
+LOCAL_SRC_FILES := \
+  $(LOCAL_PATH)/lib/$(TARGET_ARCH_ABI)/libnghttp2.a
+# LOCAL_STATIC_LIBRARIES := ssl-built quiche-built
+# LOCAL_WHOLE_STATIC_LIBRARIES += ssl-built quiche-built
+include $(PREBUILT_STATIC_LIBRARY)
+################################################################################
 #cURL prebuilt
 include $(CLEAR_VARS)
 LOCAL_MODULE := curl-built
 LOCAL_SRC_FILES := \
   $(LOCAL_PATH)/lib/$(TARGET_ARCH_ABI)/libcurl.a
+LOCAL_STATIC_LIBRARIES := nghttp2-built quiche-built crypto-built ssl-built
+#LOCAL_WHOLE_STATIC_LIBRARIES += nghttp2-built quiche-built crypto-built ssl-built
 include $(PREBUILT_STATIC_LIBRARY)
 ################################################################################
-
 #qn-curl
 include $(CLEAR_VARS)
 LOCAL_LDLIBS := -llog

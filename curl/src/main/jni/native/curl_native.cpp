@@ -154,24 +154,26 @@ int CurlProgressCallback(void *client, double downloadTotal, double downloadNow,
 void initCurlRequestDefaultOptions(CURL *curl, struct CurlContext *curlContext, CURLcode *errorCode,
                                    const char **errorInfo) {
 
-    curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+    // curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
 
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 30L);
+
+    curl_easy_setopt(curl, CURLOPT_EXPECT_100_TIMEOUT_MS, 20000L);
+
     curl_easy_setopt(curl, CURLOPT_SERVER_RESPONSE_TIMEOUT, 15L);
     curl_easy_setopt(curl, CURLOPT_ACCEPTTIMEOUT_MS, 5000L);
     curl_easy_setopt(curl, CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS, 300L);
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
 
     curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(curl, CURLOPT_TCP_KEEPIDLE, 10L);
     curl_easy_setopt(curl, CURLOPT_TCP_KEEPINTVL, 10L);
     curl_easy_setopt(curl, CURLOPT_TCP_FASTOPEN, 1L);
 
-    curl_easy_setopt(curl, CURLOPT_MAXCONNECTS, 0L);
-    curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1L);
+  //  curl_easy_setopt(curl, CURLOPT_MAXCONNECTS, 0L);
+    //   curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1L);
 //    curl_easy_setopt(curl, CURLOPT_PIPEWAIT, 1);
     curl_easy_setopt(curl, CURLOPT_DNS_CACHE_TIMEOUT, 10L);
-    curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
+    curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_3);
 
 
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
@@ -221,25 +223,28 @@ void initCurlRequestCustomOptions(CURL *curl, struct CurlContext *curlContext) {
         return;
     }
 
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, curlContext->requestTimeout);
+    // curl_easy_setopt(curl, CURLOPT_TIMEOUT, curlContext->requestTimeout);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 40L);
 
     //todo: CA证书配置
-    char *caPath = curlContext->caPath;
-    if (caPath != NULL && strlen(caPath) > 0) {
-        curl_easy_setopt(curl, CURLOPT_CAINFO, caPath);
-        curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_DEFAULT);
-        curl_easy_setopt(curl, CURLOPT_SSL_CIPHER_LIST, "ALL");
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1L);
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, NULL);
-    } else {
+//    char *caPath = curlContext->caPath;
+//    if (caPath != NULL && strlen(caPath) > 0) {
+//        curl_easy_setopt(curl, CURLOPT_CAINFO, caPath);
+//        curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_DEFAULT);
+//        curl_easy_setopt(curl, CURLOPT_SSL_CIPHER_LIST, "ALL");
+//        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+//        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1L);
+//        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, NULL);
+//    } else {
+        curl_easy_setopt(curl, CURLOPT_USE_SSL, CURLUSESSL_ALL);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
-    }
+//    }
 }
 
 void initCurlDnsResolver(CURL *curl, struct CurlContext *curlContext) {
     if (curlContext != NULL && curlContext->dnsResolverArray != NULL) {
+        kCurlLogD("== Dns resolver:%s", curlContext->dnsResolverArray->data);
         curl_easy_setopt(curl, CURLOPT_RESOLVE, curlContext->dnsResolverArray);
     }
 }
@@ -279,7 +284,7 @@ initCurlRequestMethod(CURL *curl, struct CurlContext *curlContext, CURLcode *err
 
 void initCurlRequestProxy(CURL *curl, struct CurlContext *curlContext) {
     if (curlContext != NULL && curlContext->proxy != NULL ) {
-        curl_easy_setopt(curl, CURLOPT_PROXY, curlContext->proxy);
+    //    curl_easy_setopt(curl, CURLOPT_PROXY, curlContext->proxy);
     }
 }
 
@@ -354,6 +359,9 @@ void handleMetrics(struct CurlContext *curlContext, CURL *curl) {
     curl_easy_getinfo(curl, CURLINFO_STARTTRANSFER_TIME_T, &start_transfer_time);
     curl_easy_getinfo(curl, CURLINFO_REDIRECT_TIME_T, &redirect_time);
     curl_easy_getinfo(curl, CURLINFO_REDIRECT_COUNT, &redirect_count);
+
+    kCurlLogD("total_time:%ld, name_lookup_time:%ld, connect_time:%ld, app_connect_time:%ld, pre_transfer_time:%ld, start_transfer_time:%ld, redirect_time:%ld, redirect_count:%ld",
+              (long)total_time, (long)name_lookup_time, (long)connect_time, (long)app_connect_time, (long)pre_transfer_time, (long)start_transfer_time, (long)redirect_time, (long)redirect_count);
 
     setJavaMetricsTotalTime(curlContext, total_time);
     setJavaMetricsNameLookupTime(curlContext, name_lookup_time);
@@ -483,7 +491,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_qiniu_curl_Curl_requestNative(JNIEnv 
     handleMetrics(&curlContext, curl);
     kCurlLogD("== Curl Debug: 8    error code:%d %s", errorCode, errorInfo);
 
-    completeWithError(&curlContext, errorCode, reinterpret_cast<const char *>(&errorInfo));
+    completeWithError(&curlContext, transformCurlStatusCode(errorCode), reinterpret_cast<const char *>(&errorInfo));
 
     releaseCurlContext(&curlContext);
     if (curl != NULL) {

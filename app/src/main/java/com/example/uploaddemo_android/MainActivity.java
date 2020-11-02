@@ -20,7 +20,12 @@ import com.luck.picture.lib.PictureSelector;
 import com.luck.picture.lib.config.PictureConfig;
 import com.luck.picture.lib.config.PictureMimeType;
 import com.luck.picture.lib.entity.LocalMedia;
+import com.qiniu.android.common.FixedZone;
 import com.qiniu.android.http.ResponseInfo;
+import com.qiniu.android.http.dns.Dns;
+import com.qiniu.android.http.dns.IDnsNetworkAddress;
+import com.qiniu.android.storage.Configuration;
+import com.qiniu.android.storage.GlobalConfiguration;
 import com.qiniu.android.storage.UpCompletionHandler;
 import com.qiniu.android.storage.UpProgressHandler;
 import com.qiniu.android.storage.UploadManager;
@@ -28,6 +33,8 @@ import com.qiniu.android.storage.UploadOptions;
 
 import org.json.JSONObject;
 
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,7 +87,51 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initData(){
-        uploadManager = new UploadManager();
+        GlobalConfiguration.getInstance().dns = new Dns() {
+            @Override
+            public List<IDnsNetworkAddress> lookup(String hostname) throws UnknownHostException {
+                if (!hostname.equals("up.qiniu.com")){
+                    return null;
+                }
+                IDnsNetworkAddress address = new IDnsNetworkAddress() {
+                    @Override
+                    public String getHostValue() {
+                        return "up.qiniu.com";
+                    }
+
+                    @Override
+                    public String getIpValue() {
+                        return "10.200.20.57";
+                    }
+
+                    @Override
+                    public Long getTtlValue() {
+                        return 120l;
+                    }
+
+                    @Override
+                    public String getSourceValue() {
+                        return "customized";
+                    }
+
+                    @Override
+                    public Long getTimestampValue() {
+                        return 120l;
+                    }
+                };
+                ArrayList<IDnsNetworkAddress> list = new ArrayList<>();
+                list.add(address);
+                return list;
+            }
+        };
+
+        FixedZone zone = new FixedZone(new String[]{"up.qiniu.com"});
+        Configuration.Builder builder = new Configuration.Builder();
+        builder.useHttps(true)
+                .useConcurrentResumeUpload(true).concurrentTaskCount(3)
+                .allowBackupHost(true)
+                .zone(zone);
+        uploadManager = new UploadManager(builder.build());
     }
 
 
@@ -96,12 +147,17 @@ public class MainActivity extends AppCompatActivity {
 
     private void uploadImage(){
         if (mediaPath == null){
+            mediaPath = "/data/data/com.example.uploaddemo_android/cache/qiniu/report/qiniu.log";
+        }
+        if (mediaPath == null){
             showMessage("请先选择上传资源");
             return;
         }
 
         String token = "your token";
         token = "dxVQk8gyk3WswArbNhdKIwmwibJ9nFsQhMNUmtIM:j6i3LDn2N1GlQCKYR9eRjBYgytk=:eyJzY29wZSI6ImtvZG8tcGhvbmUtem9uZTAtc3BhY2UiLCJkZWFkbGluZSI6MTYwODg3OTI0MiwgInJldHVybkJvZHkiOiJ7XCJmb29cIjokKHg6Zm9vKSwgXCJiYXJcIjokKHg6YmFyKSwgXCJtaW1lVHlwZVwiOiQobWltZVR5cGUpLCBcImhhc2hcIjokKGV0YWcpLCBcImtleVwiOiQoa2V5KSwgXCJmbmFtZVwiOiQoZm5hbWUpfSJ9";
+        // test
+        token = "HwFOxpYCQU6oXoZXFOTh1mq5ZZig6Yyocgk3BTZZ:Uh4lzaLRbUtcvn5E9KbN3SnCw_I=:eyJzY29wZSI6ImtvZG8tcGhvbmUtem9uZTAtc3BhY2UiLCJkZWFkbGluZSI6MTYwNzY2ODYxOSwgInJldHVybkJvZHkiOiJ7XCJmb29cIjokKHg6Zm9vKSwgXCJiYXJcIjokKHg6YmFyKSwgXCJtaW1lVHlwZVwiOiQobWltZVR5cGUpLCBcImhhc2hcIjokKGV0YWcpLCBcImtleVwiOiQoa2V5KSwgXCJmbmFtZVwiOiQoZm5hbWUpfSJ9";
         Map<String, String> params = new HashMap<String, String>();
         params.put("x:foo", "foo");
         params.put("x:bar", "bar");

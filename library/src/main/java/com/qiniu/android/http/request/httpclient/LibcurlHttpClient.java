@@ -1,5 +1,7 @@
 package com.qiniu.android.http.request.httpclient;
 
+import android.util.Log;
+
 import com.qiniu.android.common.Constants;
 import com.qiniu.android.http.ProxyConfiguration;
 import com.qiniu.android.http.ResponseInfo;
@@ -43,23 +45,23 @@ public class LibcurlHttpClient implements IRequestClient {
 
         final CurlConfiguration.Builder configurationBuilder = new CurlConfiguration.Builder();
 
+        Log.d("", "== CURL request url:" + request.urlString + " ip:" + request.ip);
+
         // dns
-        if (request.getInetAddress() != null){
-            String ip = request.ip;
-            String host = request.host;
-            if (ip != null && host != null){
-                String dnsResolver = host + ":" + ip;
-                configurationBuilder.dnsResolverArray = new String[]{dnsResolver};
-            }
+        if (request.ip != null && request.host != null){
+                CurlConfiguration.DnsResolver dnsResolver = new CurlConfiguration.DnsResolver(request.host, request.ip, request.isHttps() ? 443 : 80);
+                configurationBuilder.setDnsResolverArray(new CurlConfiguration.DnsResolver[]{dnsResolver});
         }
 
         // proxy
         if (connectionProxy != null){
             if (connectionProxy.hostAddress != null){
-                configurationBuilder.proxy = connectionProxy.hostAddress + ":" + connectionProxy.port;
+                String proxy = connectionProxy.hostAddress + ":" + connectionProxy.port;
+                configurationBuilder.setProxy(proxy);
             }
             if (connectionProxy.user != null && connectionProxy.password != null){
-                configurationBuilder.proxyUserPwd = connectionProxy.user + ":" + connectionProxy.password;
+                String proxyUserPwd = connectionProxy.user + ":" + connectionProxy.password;
+                configurationBuilder.setProxyUserPwd(proxyUserPwd);
             }
         }
 

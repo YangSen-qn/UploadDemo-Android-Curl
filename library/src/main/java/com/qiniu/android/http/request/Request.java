@@ -46,6 +46,13 @@ public class Request {
         }
     }
 
+    public boolean isHttps(){
+        if (this.urlString != null && this.urlString.contains("https")){
+            return true;
+        } else {
+            return false;
+        }
+    }
     protected boolean isValid() {
         return this.urlString == null || httpMethod == null;
     }

@@ -36,8 +36,17 @@ struct curl_slist * getJavaCurlConfigurationDnsResolverArray(JNIEnv *env, jobjec
         jstring dnsResolver = (jstring) env->GetObjectArrayElement(dnsResolverArray, i);
 
         jboolean isCopy;
-        const char *headerField_char = env->GetStringUTFChars(dnsResolver, &isCopy);
-        curl_slist_append(dnsResolverList, headerField_char);
+        const char *dnsResolver_char = env->GetStringUTFChars(dnsResolver, &isCopy);
+        if (dnsResolver_char != NULL) {
+            size_t dnsResolver_char_size = strlen(dnsResolver_char);
+            char *dnsResolver_char_cp = (char *) malloc(dnsResolver_char_size);
+            memset(dnsResolver_char_cp, '\0', dnsResolver_char_size);
+            strcpy(dnsResolver_char_cp, dnsResolver_char);
+
+            dnsResolverList = curl_slist_append(dnsResolverList, dnsResolver_char_cp);
+
+            env->ReleaseStringUTFChars(dnsResolver, dnsResolver_char);
+        }
 
         env->DeleteLocalRef(dnsResolver);
     }

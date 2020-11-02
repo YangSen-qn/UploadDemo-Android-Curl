@@ -3,6 +3,7 @@
 //
 
 #include "stdlib.h"
+#include "string.h"
 #include "curl_request.h"
 #include "curl_utils.h"
 
@@ -175,8 +176,7 @@ int getJavaCurlRequestTimeout(JNIEnv *env, jobject curlRequest) {
     return timeout;
 }
 
-void setCurlContextWithRequest(CurlContext *curlContext, jobject curlRequest){
-    JNIEnv *env = curlContext->env;
+void setCurlContextWithRequest(JNIEnv *env, CurlContext *curlContext, jobject curlRequest){
     if (env == NULL || curlRequest == NULL) {
         return;
     }

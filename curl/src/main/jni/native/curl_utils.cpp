@@ -146,3 +146,281 @@ char* curlUtilConvertJByteArrayToChars(JNIEnv *env, jbyteArray byteArray) {
 
     return chars;
 }
+
+int transformCurlStatusCode(int statusCode){
+
+    int statusCodeRet = statusCode;
+    switch (statusCode){
+        case CURLE_OK: // 0
+            // All fine. Proceed as usual.
+            break;
+        case CURLE_UNSUPPORTED_PROTOCOL: // 1
+            // The URL you passed to libcurl used a protocol that this libcurl does not support.
+            // The support might be a compile-time option that you didn't use, it can be a
+            // misspelled protocol string or just a protocol libcurl has no code for.
+            statusCodeRet = 0;
+            break;
+        case CURLE_FAILED_INIT: // 2
+            // Very early initialization code failed. This is likely to be an internal error or
+            // problem, or a resource problem where something fundamental couldn't get done at init
+            // time.
+            break;
+        case CURLE_URL_MALFORMAT: // 3
+            // The URL was not properly formatted.
+            break;
+        case CURLE_NOT_BUILT_IN: // 4
+            // A requested feature, protocol or option was not found built-in in this libcurl due
+            // to a build-time decision. This means that a feature or option was not enabled or
+            // explicitly disabled when libcurl was built and in order to get it to function you
+            // have to get a rebuilt libcurl.
+            break;
+        case CURLE_COULDNT_RESOLVE_PROXY: // 5
+            // Couldn't resolve proxy. The given proxy host could not be resolved.
+            break;
+        case CURLE_COULDNT_RESOLVE_HOST: // 6
+            // Couldn't resolve host. The given remote host was not resolved.
+            break;
+        case CURLE_COULDNT_CONNECT: // 7
+            //
+            break;
+        case CURLE_WEIRD_SERVER_REPLY: // 8
+            //
+            break;
+        case CURLE_REMOTE_ACCESS_DENIED: // 9
+            //
+            break;
+        case CURLE_FTP_ACCEPT_FAILED: //
+            //
+            break;
+        case CURLE_FTP_WEIRD_PASS_REPLY: //
+            //
+            break;
+        case CURLE_FTP_ACCEPT_TIMEOUT: //
+            //
+            break;
+        case CURLE_FTP_WEIRD_PASV_REPLY: //
+            //
+            break;
+        case CURLE_FTP_WEIRD_227_FORMAT: //
+            //
+            break;
+        case CURLE_FTP_CANT_GET_HOST: //
+            //
+            break;
+        case CURLE_HTTP2: //
+            //
+            break;
+        case CURLE_FTP_COULDNT_SET_TYPE: //
+            //
+            break;
+        case CURLE_PARTIAL_FILE: //
+            //
+            break;
+        case CURLE_FTP_COULDNT_RETR_FILE: //
+            //
+            break;
+        case CURLE_QUOTE_ERROR: //
+            //
+            break;
+        case CURLE_HTTP_RETURNED_ERROR: //
+            //
+            break;
+        case CURLE_WRITE_ERROR: //
+            //
+            break;
+        case CURLE_UPLOAD_FAILED: //
+            //
+            break;
+        case CURLE_READ_ERROR: //
+            //
+            break;
+        case CURLE_OUT_OF_MEMORY: //
+            //
+            break;
+        case CURLE_OPERATION_TIMEDOUT: //
+            //
+            break;
+        case CURLE_FTP_PORT_FAILED: //
+            //
+            break;
+        case CURLE_FTP_COULDNT_USE_REST: //
+            //
+            break;
+        case CURLE_RANGE_ERROR: //
+            //
+            break;
+        case CURLE_HTTP_POST_ERROR: //
+            //
+            break;
+        case CURLE_SSL_CONNECT_ERROR: //
+            //
+            break;
+        case CURLE_BAD_DOWNLOAD_RESUME: //
+            //
+            break;
+        case CURLE_FILE_COULDNT_READ_FILE: //
+            //
+            break;
+        case CURLE_LDAP_CANNOT_BIND: //
+            //
+            break;
+        case CURLE_LDAP_SEARCH_FAILED: //
+            //
+            break;
+        case CURLE_FUNCTION_NOT_FOUND: //
+            //
+            break;
+        case CURLE_ABORTED_BY_CALLBACK: //
+            //
+            break;
+        case CURLE_BAD_FUNCTION_ARGUMENT: //
+            //
+            break;
+        case CURLE_INTERFACE_FAILED: //
+            //
+            break;
+        case CURLE_TOO_MANY_REDIRECTS: //
+            //
+            break;
+        case CURLE_UNKNOWN_OPTION: //
+            //
+            break;
+        case CURLE_TELNET_OPTION_SYNTAX: //
+            //
+            break;
+        case CURLE_GOT_NOTHING: //
+            //
+            break;
+        case CURLE_SSL_ENGINE_NOTFOUND: //
+            //
+            break;
+        case CURLE_SSL_ENGINE_SETFAILED: //
+            //
+            break;
+        case CURLE_SEND_ERROR: //
+            //
+            break;
+        case CURLE_RECV_ERROR: //
+            //
+            break;
+        case CURLE_SSL_CERTPROBLEM: //
+            //
+            break;
+        case CURLE_SSL_CIPHER: //
+            //
+            break;
+        case CURLE_PEER_FAILED_VERIFICATION: //
+            //
+            break;
+        case CURLE_BAD_CONTENT_ENCODING: //
+            //
+            break;
+        case CURLE_LDAP_INVALID_URL: //
+            //
+            break;
+        case CURLE_FILESIZE_EXCEEDED: //
+            //
+            break;
+        case CURLE_USE_SSL_FAILED: //
+            //
+            break;
+        case CURLE_SEND_FAIL_REWIND: //
+            //
+            break;
+        case CURLE_SSL_ENGINE_INITFAILED: //
+            //
+            break;
+        case CURLE_LOGIN_DENIED: //
+            //
+            break;
+        case CURLE_TFTP_NOTFOUND: //
+            //
+            break;
+        case CURLE_TFTP_PERM: //
+            //
+            break;
+        case CURLE_REMOTE_DISK_FULL: //
+            //
+            break;
+        case CURLE_TFTP_ILLEGAL: //
+            //
+            break;
+        case CURLE_TFTP_UNKNOWNID: //
+            //
+            break;
+        case CURLE_REMOTE_FILE_EXISTS: //
+            //
+            break;
+        case CURLE_TFTP_NOSUCHUSER: //
+            //
+            break;
+        case CURLE_CONV_FAILED: //
+            //
+            break;
+        case CURLE_CONV_REQD: //
+            //
+            break;
+        case CURLE_SSL_CACERT_BADFILE: //
+            //
+            break;
+        case CURLE_REMOTE_FILE_NOT_FOUND: //
+            //
+            break;
+        case CURLE_SSH: //
+            //
+            break;
+        case CURLE_SSL_SHUTDOWN_FAILED: //
+            //
+            break;
+        case CURLE_AGAIN: //
+            //
+            break;
+        case CURLE_SSL_CRL_BADFILE: //
+            //
+            break;
+        case CURLE_SSL_ISSUER_ERROR: //
+            //
+            break;
+        case CURLE_FTP_PRET_FAILED: //
+            //
+            break;
+        case CURLE_RTSP_CSEQ_ERROR: //
+            //
+            break;
+        case CURLE_RTSP_SESSION_ERROR: //
+            //
+            break;
+        case CURLE_FTP_BAD_FILE_LIST: //
+            //
+            break;
+        case CURLE_CHUNK_FAILED: //
+            //
+            break;
+        case CURLE_NO_CONNECTION_AVAILABLE: //
+            //
+            break;
+        case CURLE_SSL_PINNEDPUBKEYNOTMATCH: //
+            //
+            break;
+        case CURLE_SSL_INVALIDCERTSTATUS: //
+            //
+            break;
+        case CURLE_HTTP2_STREAM: //
+            //
+            break;
+        case CURLE_RECURSIVE_API_CALL: //
+            //
+            break;
+        case CURLE_AUTH_ERROR: //
+            //
+            break;
+        case CURLE_HTTP3: //
+            //
+            break;
+//        case CURLE_QUIC_CONNECT_ERROR:
+//            break;
+        default:
+            break;
+    }
+    return statusCodeRet;
+}

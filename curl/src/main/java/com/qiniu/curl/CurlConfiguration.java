@@ -1,11 +1,9 @@
 package com.qiniu.curl;
 
-import android.content.Context;
-import android.util.Log;
-import java.io.IOException;
 
-import java.io.InputStream;
+import android.annotation.SuppressLint;
 
+import java.util.ArrayList;
 
 public class CurlConfiguration {
 
@@ -39,11 +37,30 @@ public class CurlConfiguration {
         this.caPath = builder.caPath;
     }
 
+
+    public static class DnsResolver {
+        protected final String host;
+        protected final String ip;
+        protected final int port;
+
+        public DnsResolver(String host, String ip, int port){
+            this.host = host;
+            this.ip = ip;
+            this.port = port;
+        }
+
+        @SuppressLint("DefaultLocale")
+        public String toString(){
+            return String.format("%s:%d:%s", this.host, this.port, this.ip);
+        }
+    }
+
     public static class Builder{
-        public String[] dnsResolverArray;
-        public String proxy;
-        public String proxyUserPwd;
-        private String caPath;
+
+        protected String[] dnsResolverArray;
+        protected String proxy;
+        protected String proxyUserPwd;
+        protected String caPath;
 
         public Builder(){
             if (defaultCAPath == null) {
@@ -52,7 +69,32 @@ public class CurlConfiguration {
             caPath = defaultCAPath;
         }
 
+        public Builder setDnsResolverArray(DnsResolver[] dnsResolverArray) {
+            if (dnsResolverArray == null || dnsResolverArray.length == 0){
+                return this;
+            }
+            ArrayList<String> dnsResolverList = new ArrayList<>();
+            for (DnsResolver resolver : dnsResolverArray){
+                dnsResolverList.add(resolver.toString());
+            }
+            this.dnsResolverArray = dnsResolverList.toArray(new String[0]);
+            return this;
+        }
 
+        public Builder setProxy(String proxy) {
+            this.proxy = proxy;
+            return this;
+        }
+
+        public Builder setProxyUserPwd(String proxyUserPwd) {
+            this.proxyUserPwd = proxyUserPwd;
+            return this;
+        }
+
+        public Builder setCaPath(String caPath) {
+            this.caPath = caPath;
+            return this;
+        }
 
         public CurlConfiguration build(){
             return new CurlConfiguration(this);

@@ -1,6 +1,8 @@
 package com.qiniu.curl;
 
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -23,11 +25,9 @@ public class Curl {
                         final CurlHandlerI curlHandler){
 
 //        ClassLoader classLoader = Curl.class.getClassLoader();
-
         new Thread(new Runnable() {
             @Override
             public void run() {
-
                 CurlHandler curlHandlerReal = new CurlHandler(curlHandler);
                 requestNative(request, curlConfiguration, curlHandlerReal);
             }
