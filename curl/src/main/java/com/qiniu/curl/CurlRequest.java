@@ -49,6 +49,7 @@ public class CurlRequest {
                 Log.d("== header:", "[" + header + ":" + headerValue + "]");
                 headerList.add(header);
             }
+            headerList.add("Expect: null");
             headerArray = headerList.toArray(new String[]{});
 
         }

@@ -20,6 +20,7 @@ import com.luck.picture.lib.PictureSelector;
 import com.luck.picture.lib.config.PictureConfig;
 import com.luck.picture.lib.config.PictureMimeType;
 import com.luck.picture.lib.entity.LocalMedia;
+import com.qiniu.android.collect.ReportConfig;
 import com.qiniu.android.common.FixedZone;
 import com.qiniu.android.http.ResponseInfo;
 import com.qiniu.android.http.dns.Dns;
@@ -35,6 +36,7 @@ import org.json.JSONObject;
 
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,10 +89,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initData(){
+        ReportConfig.getInstance().isReportEnable = false;
         GlobalConfiguration.getInstance().dns = new Dns() {
             @Override
             public List<IDnsNetworkAddress> lookup(String hostname) throws UnknownHostException {
-                if (!hostname.equals("up.qiniu.com")){
+                if (!hostname.equals("up.qiniu.com")
+                        && !hostname.equals("uc.qbox.me")
+                        && !hostname.equals("api.qiniu.com")){
                     return null;
                 }
                 IDnsNetworkAddress address = new IDnsNetworkAddress() {
@@ -127,8 +132,8 @@ public class MainActivity extends AppCompatActivity {
 
         FixedZone zone = new FixedZone(new String[]{"up.qiniu.com"});
         Configuration.Builder builder = new Configuration.Builder();
-        builder.useHttps(true)
-                .useConcurrentResumeUpload(true).concurrentTaskCount(3)
+        builder.useHttps(false)
+                .useConcurrentResumeUpload(false).concurrentTaskCount(3)
                 .allowBackupHost(true)
                 .zone(zone);
         uploadManager = new UploadManager(builder.build());
@@ -147,7 +152,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void uploadImage(){
         if (mediaPath == null){
-            mediaPath = "/data/data/com.example.uploaddemo_android/cache/qiniu/report/qiniu.log";
+            // 2.9M
+            mediaPath = "/sdcard/thku.mp3";
+            // 85.7M
+//            mediaPath = "/sdcard/clock_1.flv";
         }
         if (mediaPath == null){
             showMessage("请先选择上传资源");
@@ -173,10 +181,13 @@ public class MainActivity extends AppCompatActivity {
             }
         }, null);
 
+        final Date startDate = new Date();
         uploadManager.put(mediaPath, "Android-demo", token, new UpCompletionHandler() {
             @Override
             public void complete(String key, ResponseInfo info, JSONObject response) {
-                showMessage(info.toString());
+
+                Date endDate = new Date();
+                showMessage(info.toString() + "\r\n duration:" + (endDate.getTime() - startDate.getTime())/1000.0);
             }
         }, options);
     }

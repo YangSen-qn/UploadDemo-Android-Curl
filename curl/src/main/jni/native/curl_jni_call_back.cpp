@@ -6,6 +6,7 @@
 #include <string.h>
 #include "curl_jni_call_back.h"
 #include "curl_context.h"
+#include "curl_utils.h"
 
 void receiveResponse(CurlContext *curlContext, char *url, int statusCode, char *httPVersion,
                      struct curl_slist *headerFields) {
@@ -115,10 +116,8 @@ size_t sendData(struct CurlContext *curlContext, char *buffer, long long dataLen
         jboolean isCopy;
         jbyte *bytes = env->GetByteArrayElements(data, &isCopy);
         memcpy(buffer, bytes, static_cast<size_t>(readLength));
-
         env->ReleaseByteArrayElements(data, bytes, isCopy);
     }
-
     env->DeleteLocalRef(handler_class);
     env->DeleteLocalRef(data);
 

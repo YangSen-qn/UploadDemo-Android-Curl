@@ -1,11 +1,13 @@
 package com.qiniu.android.http.request;
 
 
+import android.util.Log;
+
 import com.qiniu.android.collect.ReportItem;
 import com.qiniu.android.collect.UploadInfoReporter;
 import com.qiniu.android.http.ResponseInfo;
 import com.qiniu.android.http.dns.DnsPrefetcher;
-//import com.qiniu.android.http.request.httpclient.LibcurlHttpClient;
+import com.qiniu.android.http.request.httpclient.LibcurlHttpClient;
 import com.qiniu.android.http.request.httpclient.SystemHttpClient;
 import com.qiniu.android.http.request.handler.CheckCancelHandler;
 import com.qiniu.android.http.request.handler.RequestProgressHandler;
@@ -71,7 +73,7 @@ class HttpSingleRequest {
             client = new SystemHttpClient();
         }
 
-//        client = new LibcurlHttpClient();
+        client = new LibcurlHttpClient();
 
         final CheckCancelHandler checkCancelHandler = new CheckCancelHandler() {
             @Override
@@ -99,6 +101,7 @@ class HttpSingleRequest {
         }, new IRequestClient.RequestClientCompleteHandler() {
             @Override
             public void complete(ResponseInfo responseInfo, UploadSingleRequestMetrics metrics, JSONObject response) {
+                Log.d("== HTTP REQUEST:", responseInfo + "");
                 if (metrics != null){
                     requestMetricsList.add(metrics);
                 }

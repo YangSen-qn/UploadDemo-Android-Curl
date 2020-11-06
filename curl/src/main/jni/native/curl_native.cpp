@@ -154,31 +154,29 @@ int CurlProgressCallback(void *client, double downloadTotal, double downloadNow,
 void initCurlRequestDefaultOptions(CURL *curl, struct CurlContext *curlContext, CURLcode *errorCode,
                                    const char **errorInfo) {
 
-    // curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+    curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
 
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 30L);
-
-    curl_easy_setopt(curl, CURLOPT_EXPECT_100_TIMEOUT_MS, 20000L);
-
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
     curl_easy_setopt(curl, CURLOPT_SERVER_RESPONSE_TIMEOUT, 15L);
     curl_easy_setopt(curl, CURLOPT_ACCEPTTIMEOUT_MS, 5000L);
     curl_easy_setopt(curl, CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS, 300L);
 
-    curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
-    curl_easy_setopt(curl, CURLOPT_TCP_KEEPIDLE, 10L);
-    curl_easy_setopt(curl, CURLOPT_TCP_KEEPINTVL, 10L);
-    curl_easy_setopt(curl, CURLOPT_TCP_FASTOPEN, 1L);
+//    curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
+//    curl_easy_setopt(curl, CURLOPT_TCP_KEEPIDLE, 10L);
+//    curl_easy_setopt(curl, CURLOPT_TCP_KEEPINTVL, 10L);
+//    curl_easy_setopt(curl, CURLOPT_TCP_FASTOPEN, 1L);
 
   //  curl_easy_setopt(curl, CURLOPT_MAXCONNECTS, 0L);
     //   curl_easy_setopt(curl, CURLOPT_FORBID_REUSE, 1L);
 //    curl_easy_setopt(curl, CURLOPT_PIPEWAIT, 1);
     curl_easy_setopt(curl, CURLOPT_DNS_CACHE_TIMEOUT, 10L);
-    curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_3);
+    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2TLS);
 
 
-    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
-    curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, CurlDebugCallback);
-    curl_easy_setopt(curl, CURLOPT_DEBUGDATA, curlContext);
+//    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+//    curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, CurlDebugCallback);
+//    curl_easy_setopt(curl, CURLOPT_DEBUGDATA, curlContext);
 
     qn_curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, CurlReceiveHeaderCallback, errorCode,
                         errorInfo, "header function set 0 error");
@@ -198,9 +196,11 @@ void initCurlRequestUploadData(CURL *curl, struct CurlContext *curlContext, CURL
     if (curlContext == NULL) {
         return;
     }
-    qn_curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE,
-                        (curl_off_t) (curlContext->totalBytesExpectedToSend), errorCode, errorInfo,
-                        "body set error");
+    long totalBytesExpectedToSend = static_cast<long>(curlContext->totalBytesExpectedToSend);
+    qn_curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, totalBytesExpectedToSend, errorCode, errorInfo,
+                        "body length set error");
+//    qn_curl_easy_setopt(curl, CURLOPT_POSTFIELDS, curlUtilConvertJByteArrayToChars(curlContext->env, curlContext->body), errorCode, errorInfo,
+//                        "body set error");
     qn_curl_easy_setopt(curl, CURLOPT_READFUNCTION, CurlReadCallback, errorCode, errorInfo,
                         "read function set 1 error");
     qn_curl_easy_setopt(curl, CURLOPT_READDATA, curlContext, errorCode, errorInfo,
@@ -284,7 +284,7 @@ initCurlRequestMethod(CURL *curl, struct CurlContext *curlContext, CURLcode *err
 
 void initCurlRequestProxy(CURL *curl, struct CurlContext *curlContext) {
     if (curlContext != NULL && curlContext->proxy != NULL ) {
-    //    curl_easy_setopt(curl, CURLOPT_PROXY, curlContext->proxy);
+//        curl_easy_setopt(curl, CURLOPT_PROXY, curlContext->proxy);
     }
 }
 

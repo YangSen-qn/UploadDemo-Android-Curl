@@ -24,14 +24,14 @@ public class Curl {
                         final CurlConfiguration curlConfiguration,
                         final CurlHandlerI curlHandler){
 
-//        ClassLoader classLoader = Curl.class.getClassLoader();
-        new Thread(new Runnable() {
+        CurlThreadPool.run(new Runnable() {
             @Override
             public void run() {
+                Log.d("==Curl request thread", Thread.currentThread().toString());
                 CurlHandler curlHandlerReal = new CurlHandler(curlHandler);
                 requestNative(request, curlConfiguration, curlHandlerReal);
             }
-        }).start();
+        });
     }
 
     public native void requestNative(final CurlRequest request,
